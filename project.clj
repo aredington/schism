@@ -3,4 +3,19 @@
   :url "https://github.com/aredington/schism"
   :license {:name "MIT License"
             :url "https://opensource.org/licenses/MIT"}
-  :dependencies [[org.clojure/clojure "1.8.0"]])
+  :dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]
+                 [org.clojure/clojurescript "1.9.946" :scope "provided"]]
+  :plugins [[lein-cljsbuild "1.1.5"]
+            [lein-doo "0.1.8"]]
+  :cljsbuild {:builds [{:id "test"
+                        :source-paths ["src" "test"]
+                        :compiler {:output-to     "target/test.js"
+                                   :main schism.test
+                                   :output-dir    "target"
+                                   :optimizations :none
+                                   :source-map    true
+                                   :pretty-print  true
+                                   :recompile-dependents false
+                                   :parallel-build true
+                                   :checked-arrays :warn}}]}
+  :clean-targets ^{:protect false} ["target"])

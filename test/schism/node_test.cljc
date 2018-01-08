@@ -1,6 +1,8 @@
 (ns schism.node-test
-  (:require [clojure.test :refer :all]
-            [schism.node :as node]))
+  (:require #?(:clj [clojure.test :refer [deftest testing is]]
+               :cljs [cljs.test :refer [deftest testing is]])
+            [schism.node :as node])
+  #?(:cljs (:require-macros [schism.node :as node])))
 
 (deftest initialize-node!-test
   (testing "With no arg"

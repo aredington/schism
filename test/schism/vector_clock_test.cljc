@@ -1,5 +1,6 @@
 (ns schism.vector-clock-test
-  (:require [clojure.test :refer :all]
+  (:require #?(:clj [clojure.test :refer [deftest testing is]]
+               :cljs [cljs.test :refer [deftest testing is]])
             [schism.vector-clock :as vc]
             [schism.protocols :as proto]
             [schism.node :as node]))
@@ -18,4 +19,5 @@
                                  (assoc test :last-time time))
         time (:last-time updated)]
     (is (= {:clock-test-node time} (proto/get-clock updated)))
-    (is (instance? java.util.Date time))))
+    (is #?(:clj (instance? java.util.Date time)
+           :cljs true))))
