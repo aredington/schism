@@ -19,7 +19,6 @@ synchronize it. Everything magically auto syncs!
 
 ## License
 
-Copyright © 2018 FIXME
+Copyright © 2018 Alex Redington
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Distributed under the MIT License
