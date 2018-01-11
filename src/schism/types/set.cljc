@@ -8,9 +8,10 @@
             [clojure.set :as set]
             #?(:cljs [cljs.reader :as reader]))
   #?(:cljs (:require-macros [schism.vector-clock :as vc]))
-  #?(:clj (:import (clojure.lang IPersistentCollection IPersistentSet)
+  #?(:clj (:import (clojure.lang IPersistentCollection IPersistentSet Murmur3 IHashEq Counted Seqable RT IFn)
                    (java.io Writer)
-                   (java.util Date))))
+                   (java.util Date Collection)
+                   (java.lang Object))))
 
 ;; A CLJS and CLJ implementation of ORSWOT (Observed-Removed Set without Tombstones)
 
@@ -33,8 +34,10 @@
 (declare orswot-conj orswot-empty orswot-disj)
 
 #?(:clj (deftype Set [data vclock birth-dots]
-          IPersistentCollection
+          Counted
           (count [this] (count (.data this)))
+
+          IPersistentCollection
           (cons [this o] (orswot-conj this o))
           (empty [this] (orswot-empty this))
           (equiv [this other]
@@ -43,7 +46,42 @@
           IPersistentSet
           (disjoin [this o] (orswot-disj this o))
           (contains [this o] (contains? (.data this) o))
-          (get [this o] (get (.data this) o)))
+          (get [this o] (get (.data this) o))
+
+          Object
+          (equals [this o]
+            (or (identical? this o)
+                (and (instance? java.util.Set o)
+                     (= (.size o) (count this))
+                     (every? (partial contains? this) o))))
+          (hashCode [this]
+            (reduce (fn [m o] (+ m (.hashCode o))) 0 (seq this)))
+          (toString [this]
+            (.toString data))
+
+          IHashEq
+          (hasheq [this]
+            (Murmur3/hashUnordered (.data this)))
+
+          Seqable
+          (seq [this] (seq (.data this)))
+
+          java.util.Set
+          (toArray [this o] (RT/seqToArray (seq this)))
+          (add [this o] (throw (UnsupportedOperationException.)))
+          (remove [this o] (throw (UnsupportedOperationException.)))
+          (addAll [this c] (throw (UnsupportedOperationException.)))
+          (clear [this] (throw (UnsupportedOperationException.)))
+          (retainAll [this c] (throw (UnsupportedOperationException.)))
+          (removeAll [this c] (throw (UnsupportedOperationException.)))
+          (containsAll [this c] (.containsAll (.data this) c))
+          (size [this] (count (.data this)))
+          (isEmpty [this] (zero? (count (.data this))))
+          (iterator [this] (.iterator (seq this)))
+
+          IFn
+          (invoke [this arg1]
+            (get this arg1)))
    :cljs (deftype Set [data vclock birth-dots]
            ICounted
            (-count [this] (count (.-data this)))
@@ -75,7 +113,19 @@
              (-write writer (pr-str (.-vclock o)))
              (-write writer ", ")
              (-write writer (pr-str (.-birth-dots o)))
-             (-write writer "]"))))
+             (-write writer "]"))
+
+           IHash
+           (-hash [this] (hash-unordered-coll this))
+
+           IFn
+           (-invoke [this o] (-lookup this o))
+
+           ISeqable
+           (-seq [this] (-seq (.-data this)))
+
+           Object
+           (toString [this] (.toString (.-data this)))))
 
 (defn orswot-conj
   [^Set orswot o]

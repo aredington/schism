@@ -52,6 +52,21 @@
                         (is (= other #{:a :b}))
                         (is (= result #{:a :b})))))))
 
+(deftest seqable-test
+  (testing "Can turn an ORSWOT into a seq"
+    (is (= (seq (sset/new-set :a :b :c))
+           (seq (hash-set :a :b :c))))))
+
+(deftest ifn-test
+  (testing "Can invoke an ORSWOT"
+    (is (= ((sset/new-set :a :b :c) :c)
+           (#{:a :b :c} :c)))))
+
+(deftest string-test
+  (testing "Prints to console readably, even though edn is verbose"
+    (is (= (str (sset/new-set :a :b :c))
+           (str (hash-set :a :b :c))))))
+
 (deftest serialization-test
   (testing "Round trip serialization generates the same structure."
     (let [origin (-> (sset/new-set :a :b :c)

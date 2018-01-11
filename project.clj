@@ -7,6 +7,7 @@
                  [org.clojure/clojurescript "1.9.946" :scope "provided"]]
   :plugins [[lein-cljsbuild "1.1.5"]
             [lein-doo "0.1.8"]]
+  :profiles {:dev {:dependencies [[doo "0.1.8"]]}}
   :cljsbuild {:builds [{:id "test"
                         :source-paths ["src" "test"]
                         :compiler {:output-to     "target/test.js"
