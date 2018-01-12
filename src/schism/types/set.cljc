@@ -8,7 +8,7 @@
             [clojure.set :as set]
             #?(:cljs [cljs.reader :as reader]))
   #?(:cljs (:require-macros [schism.vector-clock :as vc]))
-  #?(:clj (:import (clojure.lang IPersistentCollection IPersistentSet Murmur3 IHashEq Counted Seqable RT IFn)
+  #?(:clj (:import (clojure.lang IPersistentCollection IPersistentSet IHashEq Counted Seqable RT IFn IObj IMeta)
                    (java.io Writer)
                    (java.util Date Collection)
                    (java.lang Object))))
@@ -35,56 +35,62 @@
 
 #?(:clj (deftype Set [data vclock birth-dots]
           Counted
-          (count [this] (count (.data this)))
+          (count [this] (.count ^Counted (.data this)))
 
           IPersistentCollection
           (cons [this o] (orswot-conj this o))
           (empty [this] (orswot-empty this))
           (equiv [this other]
-            (= (.data this) other))
+            (.equiv ^IPersistentCollection (.data this) other))
 
           IPersistentSet
           (disjoin [this o] (orswot-disj this o))
-          (contains [this o] (contains? (.data this) o))
-          (get [this o] (get (.data this) o))
+          (contains [this o] (.contains ^IPersistentSet (.data this) o))
+          (get [this o] (.get ^IPersistentSet (.data this) o))
 
           Object
           (equals [this o]
-            (or (identical? this o)
-                (and (instance? java.util.Set o)
-                     (= (.size o) (count this))
-                     (every? (partial contains? this) o))))
+            (.equals (.data this) o))
           (hashCode [this]
-            (reduce (fn [m o] (+ m (.hashCode o))) 0 (seq this)))
+            (.hashCode (.data this)))
           (toString [this]
             (.toString data))
 
           IHashEq
           (hasheq [this]
-            (Murmur3/hashUnordered (.data this)))
+            (.hasheq ^IHashEq (.data this)))
 
           Seqable
-          (seq [this] (seq (.data this)))
+          (seq [this] (.seq ^Seqable (.data this)))
 
           java.util.Set
-          (toArray [this o] (RT/seqToArray (seq this)))
+          (toArray [this] (.toArray ^java.util.Set (.data this)))
+          (toArray [this a] (.toArray ^java.util.Set (.data this) a))
           (add [this o] (throw (UnsupportedOperationException.)))
           (remove [this o] (throw (UnsupportedOperationException.)))
           (addAll [this c] (throw (UnsupportedOperationException.)))
           (clear [this] (throw (UnsupportedOperationException.)))
           (retainAll [this c] (throw (UnsupportedOperationException.)))
           (removeAll [this c] (throw (UnsupportedOperationException.)))
-          (containsAll [this c] (.containsAll (.data this) c))
-          (size [this] (count (.data this)))
-          (isEmpty [this] (zero? (count (.data this))))
-          (iterator [this] (.iterator (seq this)))
+          (containsAll [this c] (.containsAll ^java.util.Set (.data this) c))
+          (size [this] (.size ^java.util.Set (.data this)))
+          (isEmpty [this] (.isEmpty ^java.util.Set (.data this)))
+          (iterator [this] (.iterator ^java.util.Set (.data this)))
 
           IFn
           (invoke [this arg1]
-            (get this arg1)))
+            (.invoke ^IFn (.data this) arg1))
+
+          IObj
+          (withMeta [this meta]
+            (Set. (.withMeta ^IObj (.data this) meta) (.vclock this) (.birth-dots this)))
+
+          IMeta
+          (meta [this]
+            (.meta ^IMeta (.data this))))
    :cljs (deftype Set [data vclock birth-dots]
            ICounted
-           (-count [this] (count (.-data this)))
+           (-count [this] (-count (.-data this)))
 
            IEmptyableCollection
            (-empty [this] (orswot-empty this))
@@ -97,7 +103,7 @@
 
            IEquiv
            (-equiv [this other]
-             (= (.-data this) other))
+             (-equiv (.-data this) other))
 
            ILookup
            (-lookup [this o]
@@ -116,16 +122,26 @@
              (-write writer "]"))
 
            IHash
-           (-hash [this] (hash-unordered-coll this))
+           (-hash [this] (-hash (.-data this)))
 
            IFn
-           (-invoke [this o] (-lookup this o))
+           (-invoke [this o] (-invoke (.-data this) o))
 
            ISeqable
            (-seq [this] (-seq (.-data this)))
 
            Object
-           (toString [this] (.toString (.-data this)))))
+           (toString [this] (.toString (.-data this)))
+
+           IMeta
+           (-meta [this]
+             (-meta (.-data this)))
+
+           IWithMeta
+           (-with-meta [this meta]
+             (Set. (-with-meta (.-data this)
+                               meta)
+                   (.-vclock this) (.-birth-dots this)))))
 
 (defn orswot-conj
   [^Set orswot o]
@@ -135,7 +151,7 @@
                          (assoc (.-birth-dots orswot) o [node/*current-node* now]))))
 
 (defn orswot-empty
-  [_]
+  [^Set orswot]
   (vc/update-clock _
                    (Set. (hash-set)
                          (hash-map)
@@ -156,15 +172,16 @@
                                      (.-birth-dots this)))
 
   proto/Convergent
-  (synchronize [this other]
+  (synchronize [this ^Set other]
     (let [own-clock (.-vclock this)
           own-data (.-data this)
           own-dots (.-birth-dots this)
+          own-meta (meta own-data)
           other-clock (.-vclock other)
           other-data (.-data other)
           other-dots (.-birth-dots other)
           retain (set/intersection own-data other-data)
-          timefn (memfn getTime)
+          timefn (memfn ^Date getTime)
           other-addition-threshold (timefn (own-clock node/*current-node*))
           other-additions (->> own-data
                                (set/difference other-data)
@@ -192,7 +209,8 @@
           completed-vclock (-> (merge-with (partial max-key timefn) own-clock other-clock)
                                (select-keys relevant-nodes))]
       (vc/update-clock _
-                       (Set. completed-data
+                       (Set. (with-meta completed-data
+                               own-meta)
                              completed-vclock
                              completed-birth-dots)))))
 

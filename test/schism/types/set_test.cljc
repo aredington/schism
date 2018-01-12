@@ -4,7 +4,8 @@
             #?(:cljs [cljs.reader :as reader])
             [schism.types.set :as sset]
             [schism.node :as node]
-            [schism.protocols :as proto]))
+            [schism.protocols :as proto])
+  #?(:clj (:import schism.types.set.Set)))
 
 
 (defn clock-ahead [n f]
@@ -69,13 +70,23 @@
 
 (deftest serialization-test
   (testing "Round trip serialization generates the same structure."
-    (let [origin (-> (sset/new-set :a :b :c)
-                     (conj :d)
-                     (disj :c))
-          round-tripped (-> origin
-                            pr-str
-                            #?(:clj read-string
-                               :cljs reader/read-string))]
+    (let [^Set origin (-> (sset/new-set :a :b :c)
+                          (conj :d)
+                          (disj :c))
+          ^Set round-tripped (-> origin
+                                 pr-str
+                                 #?(:clj read-string
+                                    :cljs reader/read-string))]
       (is (= (.-data origin) (.-data round-tripped)))
       (is (= (.-vclock origin) (.-vclock round-tripped)))
       (is (= (.-birth-dots origin) (.-birth-dots round-tripped))))))
+
+(deftest hashing-test
+  (testing "Hashes to the same value as an equivalent hash-set"
+    (is (= (hash (into (sset/new-set) [:a :b :c]))
+           (hash (into #{} [:a :b :c]))))))
+
+(deftest meta-test
+  (testing "Metadata on ORSWOTs"
+    (is (= (meta (with-meta (sset/new-set) {:test :data}))
+           {:test :data}))))
