@@ -5,7 +5,7 @@
             [schism.types.list :as slist]
             [schism.node :as node]
             [schism.protocols :as proto])
-  #?(:clj (:import schism.types.list.List)))
+  #?(:clj (:import schism.types.list.ConvergentList)))
 
 
 (defn clock-ahead [n f]
@@ -63,13 +63,13 @@
 
 (deftest serialization-test
   (testing "Round trip serialization generates the same structure."
-    (let [^List origin (-> (slist/new-list :a true :b 3 :c :d)
-                           (conj [:d :quux])
-                           rest)
-          ^List round-tripped (-> origin
-                                  pr-str
-                                  #?(:clj read-string
-                                     :cljs reader/read-string))]
+    (let [^ConvergentList origin (-> (slist/new-list :a true :b 3 :c :d)
+                                     (conj [:d :quux])
+                                     rest)
+          ^ConvergentList round-tripped (-> origin
+                                            pr-str
+                                            #?(:clj read-string
+                                               :cljs reader/read-string))]
       (is (= (.-data origin) (.-data round-tripped)))
       (is (= (.-vclock origin) (.-vclock round-tripped)))
       (is (= (.-insertions origin) (.-insertions round-tripped))))))

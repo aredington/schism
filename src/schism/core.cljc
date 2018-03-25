@@ -12,7 +12,7 @@
   ([] (smap/new-map)))
 
 (defn convergent-list
-  ([] (smap/new-list)))
+  ([] (slist/new-list)))
 
 (defn converge
   [c1 c2]

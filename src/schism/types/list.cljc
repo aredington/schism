@@ -18,14 +18,14 @@
 ;; A CLJ & CLJS implementation of a convergent list
 
 ;; Each list maintains its own vector clock, and insertion times for
-;; each element of the list. List entries and insertions are
+;; each element of the list. ConvergentList entries and insertions are
 ;; correlated positionally (as the list may contain the same item
 ;; multiple times.) Insertion times dictate ordering. The vector clock
 ;; determines if an entry has been removed.
 
 (declare clist-conj clist-rest clist-empty)
 
-#?(:clj (deftype List [data vclock insertions]
+#?(:clj (deftype ConvergentList [data vclock insertions]
           Counted
           (count [this] (.count ^Counted (.data this)))
 
@@ -78,10 +78,10 @@
 
           IObj
           (withMeta [this meta]
-            (List. (with-meta ^IObj (.data this)
-                     meta)
-                   (.vclock this)
-                   (.insertions this)))
+            (ConvergentList. (with-meta ^IObj (.data this)
+                               meta)
+                             (.vclock this)
+                             (.insertions this)))
 
           IMeta
           (meta [this]
@@ -100,7 +100,7 @@
           (first [this] (.first ^ISeq (.data this)))
           (next [this] (clist-rest this))
           (more [this] (clist-rest this)))
-   :cljs (deftype List [data vclock insertions]
+   :cljs (deftype ConvergentList [data vclock insertions]
            ICounted
            (-count [this] (-count (.-data this)))
 
@@ -139,10 +139,10 @@
 
            IWithMeta
            (-with-meta [this meta]
-             (List. (-with-meta (.-data this)
-                                meta)
-                    (.-vclock this)
-                    (.-insertions this)))
+             (ConvergentList. (-with-meta (.-data this)
+                                          meta)
+                              (.-vclock this)
+                              (.-insertions this)))
 
            ISeq
            (-first [this]
@@ -150,33 +150,33 @@
            (-rest [this]
              (clist-rest this))))
 
-(defn clist-conj [^List clist o]
+(defn clist-conj [^ConvergentList clist o]
   (vc/update-clock now
-                   (List. (conj (.-data clist) o)
-                          (.-vclock clist)
-                          (conj (.-insertions clist) [node/*current-node* now]))))
+                   (ConvergentList. (conj (.-data clist) o)
+                                    (.-vclock clist)
+                                    (conj (.-insertions clist) [node/*current-node* now]))))
 
-(defn clist-empty [^List clist]
+(defn clist-empty [^ConvergentList clist]
   (vc/update-clock _
-                   (List. (list)
-                          (hash-map)
-                          (list))))
+                   (ConvergentList. (list)
+                                    (hash-map)
+                                    (list))))
 
-(defn clist-rest [^List clist]
+(defn clist-rest [^ConvergentList clist]
   (vc/update-clock _
-                   (List. (rest (.-data clist))
-                          (.-vclock clist)
-                          (rest (.-insertions clist)))))
+                   (ConvergentList. (rest (.-data clist))
+                                    (.-vclock clist)
+                                    (rest (.-insertions clist)))))
 
-(extend-type List
+(extend-type ConvergentList
   proto/Vclocked
   (get-clock [this] (.-vclock this))
-  (with-clock [this new-clock] (List. (.-data this)
-                                      new-clock
-                                      (.-insertions this)))
+  (with-clock [this new-clock] (ConvergentList. (.-data this)
+                                                new-clock
+                                                (.-insertions this)))
 
   proto/Convergent
-  (synchronize [this ^List other]
+  (synchronize [this ^ConvergentList other]
     (let [own-clock (.-vclock this)
           own-data (.-data this)
           own-insertions (.-insertions this)
@@ -206,13 +206,13 @@
           all-pairs (concat common-addition-tuples common-tail)
           merged-vclock (merge-with (partial max-key timefn) own-clock other-clock)]
       (vc/update-clock _
-                       (List. (with-meta (map first all-pairs)
-                                own-meta)
-                              merged-vclock
-                              (map last all-pairs))))))
+                       (ConvergentList. (with-meta (map first all-pairs)
+                                          own-meta)
+                                        merged-vclock
+                                        (map last all-pairs))))))
 
-#?(:clj (defmethod print-method List
-          [^List l ^Writer writer]
+#?(:clj (defmethod print-method ConvergentList
+          [^ConvergentList l ^Writer writer]
           (.write writer "#schism/list [")
           (.write writer (pr-str (.data l)))
           (.write writer ", ")
@@ -224,15 +224,15 @@
 (defn read-edn-list
   [read-object]
   (let [[data vclock insertions] read-object]
-    (List. data vclock insertions)))
+    (ConvergentList. data vclock insertions)))
 
-#?(:cljs (cljs.reader/register-tag-parser! #'schism/list read-edn-list))
+#?(:cljs (cljs.reader/register-tag-parser! 'schism/list read-edn-list))
 
 (defn new-list
-  ([] (List. (list)
-             (hash-map)
-             (list)))
+  ([] (ConvergentList. (list)
+                       (hash-map)
+                       (list)))
   ([& args] (vc/update-clock now
-                             (List. (apply list args)
-                                    (hash-map)
-                                    (apply list (repeat (count args) [node/*current-node* now]))))))
+                             (ConvergentList. (apply list args)
+                                              (hash-map)
+                                              (apply list (repeat (count args) [node/*current-node* now]))))))

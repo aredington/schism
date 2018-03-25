@@ -19,4 +19,5 @@
                                    :recompile-dependents false
                                    :parallel-build true
                                    :checked-arrays :warn}}]}
-  :clean-targets ^{:protect false} ["target"])
+  :clean-targets ^{:protect false} ["target"]
+  :aliases {"test-platforms" ["do" "clean," "test," "doo" "chrome" "test" "once"]})
