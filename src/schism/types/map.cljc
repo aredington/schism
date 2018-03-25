@@ -8,7 +8,7 @@
             [clojure.set :as set]
             #?(:cljs [cljs.reader :as reader]))
   #?(:cljs (:require-macros [schism.vector-clock :as vc]))
-  #?(:clj (:import (clojure.lang IPersistentCollection IPersistentMap IHashEq Associative ILookup Counted Seqable IMapIterable IKVReduce RT IFn IObj IMeta)
+  #?(:clj (:import (clojure.lang IPersistentCollection IPersistentMap IHashEq Associative ILookup Counted Seqable IMapIterable IKVReduce IFn IObj IMeta)
                    (java.io Writer)
                    (java.util Date Collection)
                    (java.lang Object))))
@@ -280,13 +280,13 @@
                              completed-birth-dots)))))
 
 #?(:clj (defmethod print-method Map
-          [^Map s ^Writer writer]
+          [^Map m ^Writer writer]
           (.write writer "#schism/map [")
-          (.write writer (pr-str (.data s)))
+          (.write writer (pr-str (.data m)))
           (.write writer ", ")
-          (.write writer (pr-str (.vclock s)))
+          (.write writer (pr-str (.vclock m)))
           (.write writer ", ")
-          (.write writer (pr-str (.birth-dots s)))
+          (.write writer (pr-str (.birth-dots m)))
           (.write writer "]")))
 
 (defn read-edn-map

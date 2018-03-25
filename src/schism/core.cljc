@@ -1,6 +1,7 @@
 (ns schism.core
   (:require [schism.types.set :as sset]
             [schism.types.map :as smap]
+            [schism.types.list :as slist]
             [schism.protocols :as sp]
             [schism.node :as sn]))
 
@@ -9,6 +10,9 @@
 
 (defn convergent-map
   ([] (smap/new-map)))
+
+(defn convergent-list
+  ([] (smap/new-list)))
 
 (defn converge
   [c1 c2]
