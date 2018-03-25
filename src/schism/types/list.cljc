@@ -7,7 +7,6 @@
   (:require [schism.protocols :as proto]
             [schism.vector-clock :as vc]
             [schism.node :as node]
-            [clojure.set :as set]
             #?(:cljs [cljs.reader :as reader]))
   #?(:cljs (:require-macros [schism.vector-clock :as vc]))
   #?(:clj (:import (clojure.lang IPersistentCollection IPersistentStack IReduce Counted IHashEq Seqable IObj IMeta ISeq)
@@ -203,13 +202,13 @@
           own-addition-tuples (take-while #(< own-addition-threshold (timefn (last %))) own-tuples)
           common-addition-tuples (->> (into '() (concat own-addition-tuples other-addition-tuples))
                                       (sort-by last))
-          all-pairs (concat common-addition-tuples common-tail)
+          all-tuples (concat common-addition-tuples common-tail)
           merged-vclock (merge-with (partial max-key timefn) own-clock other-clock)]
       (vc/update-clock _
-                       (ConvergentList. (with-meta (map first all-pairs)
+                       (ConvergentList. (with-meta (map first all-tuples)
                                           own-meta)
                                         merged-vclock
-                                        (map last all-pairs))))))
+                                        (map #(subvec % 1) all-tuples))))))
 
 #?(:clj (defmethod print-method ConvergentList
           [^ConvergentList l ^Writer writer]

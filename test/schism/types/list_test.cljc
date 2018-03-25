@@ -49,7 +49,7 @@
                                     (rest transfer))
                             result (proto/synchronize transfer other)]
                         (is (= other '(true :b 3 :c :d)))
-                        (is (= other '(true :b 3 :c :d))))))))
+                        (is (= result '(true :b 3 :c :d))))))))
 
 (deftest seqable-test
   (testing "Can turn a CLIST into a seq"
