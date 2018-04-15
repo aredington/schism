@@ -3,20 +3,24 @@
             [schism.types.map :as smap]
             [schism.types.list :as slist]
             [schism.types.vector :as svector]
-            [schism.protocols :as sp]
+            [schism.impl.protocols :as sp]
             [schism.node :as sn]))
 
 (defn convergent-set
-  ([] (sset/new-set)))
+  [& args]
+  (apply sset/new-set args))
 
 (defn convergent-map
-  ([] (smap/new-map)))
+  [& args]
+  (apply smap/new-map args))
 
 (defn convergent-list
-  ([] (slist/new-list)))
+  [& args]
+  (apply slist/new-list args))
 
 (defn convergent-vector
-  ([] (svector/new-vector)))
+  [& args]
+  (apply svector/new-vector args))
 
 (defn converge
   [c1 c2]

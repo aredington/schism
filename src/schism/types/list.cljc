@@ -4,7 +4,7 @@
   clock. Convergence places entries into the resultant list in
   insertion order. The vector clock conveys that an item has been
   removed from the list on another node."
-  (:require [schism.protocols :as proto]
+  (:require [schism.impl.protocols :as proto]
             [schism.vector-clock :as vc]
             [schism.node :as node]
             #?(:cljs [cljs.reader :as reader]))

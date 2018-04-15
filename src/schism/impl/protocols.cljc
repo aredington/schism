@@ -1,4 +1,4 @@
-(ns schism.protocols)
+(ns schism.impl.protocols)
 
 (defprotocol Convergent
   (synchronize [convergent other]

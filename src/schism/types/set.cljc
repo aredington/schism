@@ -2,7 +2,7 @@
   "Definition and support for Schism's Convergent Set type, an ORSWOT
   implemented on top of Clojure's Persistent Set, Persistent Map and
   Schism's Vector Clock."
-  (:require [schism.protocols :as proto]
+  (:require [schism.impl.protocols :as proto]
             [schism.vector-clock :as vc]
             [schism.node :as node]
             [clojure.set :as set]
@@ -30,6 +30,24 @@
 ;; the birth-dots; if a Vclock indicates an element was removed, the
 ;; node converging its changes can claim responsibility for removing
 ;; the element in the merged set.
+
+;; TODO:
+
+;; With vector clocks AND birthdots it is possible to disambiguate the
+;; removal of an element from the post-replication addition of that
+;; element. When merging other, examine it's vector clock for each
+;; entry that is uniquely in own. If that entry's authoring node is
+;; present in the vector clock, and the timestamp in other's vector
+;; clock is less than the birth dot of own's entry, then retain the
+;; entry, as other never saw it and could not have removed it.
+
+;; Create a protocol for an abstract merge semantic. All of the
+;; current convergent types need to return: a) a vector clock and b) a
+;; collection of entries where each entry is "the data", the time it
+;; was added to the collection, and the originating node. The abstract
+;; merge returns: the completed vector clock and the entries to
+;; retain. It's then up to the individual impls to reconstitute the
+;; entries into a merged realization of the collection.
 
 (declare orswot-conj orswot-empty orswot-disj)
 

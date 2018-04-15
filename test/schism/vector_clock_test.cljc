@@ -2,7 +2,7 @@
   (:require #?(:clj [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer [deftest testing is]])
             [schism.vector-clock :as vc]
-            [schism.protocols :as proto]
+            [schism.impl.protocols :as proto]
             [schism.node :as node]))
 
 

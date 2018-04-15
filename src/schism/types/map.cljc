@@ -2,7 +2,7 @@
   "Definition and support for Schism's Convergent Map type, an ORMWOT
   implemented on top of Clojure's persistent maps and a Schism Vector
   Clock."
-  (:require [schism.protocols :as proto]
+  (:require [schism.impl.protocols :as proto]
             [schism.vector-clock :as vc]
             [schism.node :as node]
             [clojure.set :as set]

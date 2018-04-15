@@ -4,7 +4,7 @@
             #?(:cljs [cljs.reader :as reader])
             [schism.types.map :as smap]
             [schism.node :as node]
-            [schism.protocols :as proto])
+            [schism.impl.protocols :as proto])
   #?(:clj (:import schism.types.map.Map)))
 
 

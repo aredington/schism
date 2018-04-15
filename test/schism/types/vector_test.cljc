@@ -4,7 +4,7 @@
             #?(:cljs [cljs.reader :as reader])
             [schism.types.vector :as svector]
             [schism.node :as node]
-            [schism.protocols :as proto])
+            [schism.impl.protocols :as proto])
   #?(:clj (:import schism.types.vector.ConvergentVector)))
 
 

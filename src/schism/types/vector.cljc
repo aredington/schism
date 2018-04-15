@@ -5,7 +5,7 @@
   resultant vector in insertion order, with insertions occurring by
   replaying insertions operations in order. The vector clock conveys
   that an item has been removed from the vector on another node."
-  (:require [schism.protocols :as proto]
+  (:require [schism.impl.protocols :as proto]
             [schism.vector-clock :as vc]
             [schism.node :as node]
             [clojure.set :as set]
