@@ -1,7 +1,7 @@
-(ns schism.vector-clock-test
+(ns schism.impl.vector-clock-test
   (:require #?(:clj [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer [deftest testing is]])
-            [schism.vector-clock :as vc]
+            [schism.impl.vector-clock :as vc]
             [schism.impl.protocols :as proto]
             [schism.node :as node]))
 

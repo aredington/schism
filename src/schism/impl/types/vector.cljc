@@ -1,4 +1,4 @@
-(ns schism.types.vector
+(ns schism.impl.types.vector
   "Definition and support for Schism's Convergent vector type. The
   convergent vector is a timestamped log of entries with a vector
   clock & insertion index. Convergence places entries into the
@@ -6,11 +6,11 @@
   replaying insertions operations in order. The vector clock conveys
   that an item has been removed from the vector on another node."
   (:require [schism.impl.protocols :as proto]
-            [schism.vector-clock :as vc]
+            [schism.impl.vector-clock :as vc]
             [schism.node :as node]
             [clojure.set :as set]
             #?(:cljs [cljs.reader :as reader]))
-  #?(:cljs (:require-macros [schism.vector-clock :as vc]))
+  #?(:cljs (:require-macros [schism.impl.vector-clock :as vc]))
   #?(:clj (:import (clojure.lang IPersistentCollection IPersistentStack IPersistentVector Reversible IReduce IKVReduce Indexed Associative Counted IHashEq Seqable IObj IMeta IFn)
                    (java.io Writer)
                    (java.util Date Collection)

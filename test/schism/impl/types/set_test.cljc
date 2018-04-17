@@ -1,11 +1,11 @@
-(ns schism.types.set-test
-  (:require #?(:clj [clojure.test :refer [deftest testing is]]
-               :cljs [cljs.test :refer [deftest testing is]])
+(ns schism.impl.types.set-test
+  (:require #?(:clj [clojure.test :refer [deftest testing is are]]
+               :cljs [cljs.test :refer [deftest testing is are]])
             #?(:cljs [cljs.reader :as reader])
-            [schism.types.set :as sset]
+            [schism.impl.types.set :as sset]
             [schism.node :as node]
             [schism.impl.protocols :as proto])
-  #?(:clj (:import schism.types.set.Set)))
+  #?(:clj (:import schism.impl.types.set.Set)))
 
 
 (defn clock-ahead [n f]
@@ -43,7 +43,17 @@
       (clock-ahead 1 #(let [other (node/with-node :converge-test-other-node
                                     (conj transfer :c))
                             result (proto/synchronize transfer other)]
-                        (is (= result #{:a :b :c}))))))
+                        (is (= result #{:a :b :c}))
+                        (is (= #{:a :b :c} (.-data result)))
+                        (doseq [[k v] (.-vclock result)]
+                          (is (#{:converge-test-origin :converge-test-other-node} k))
+                          (is (instance? java.util.Date v)))
+                        (is (= #{:converge-test-origin :converge-test-other-node} (set (keys (.-vclock result)))))
+                        (is (= (.-data result) (set (keys (.-birth-dots result)))))
+                        (doseq [[element [node time]] (.-birth-dots result)]
+                          (is (#{:a :b :c} element))
+                          (is (#{:converge-test-origin :converge-test-other-node} node))
+                          (is (instance? java.util.Date time)))))))
   (testing "Disj on another node mirrored locally after converge."
     (node/initialize-node! :converge-test-origin)
     (let [transfer (sset/new-set :a :b :c)]

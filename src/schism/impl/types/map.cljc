@@ -1,13 +1,13 @@
-(ns schism.types.map
+(ns schism.impl.types.map
   "Definition and support for Schism's Convergent Map type, an ORMWOT
   implemented on top of Clojure's persistent maps and a Schism Vector
   Clock."
   (:require [schism.impl.protocols :as proto]
-            [schism.vector-clock :as vc]
+            [schism.impl.vector-clock :as vc]
             [schism.node :as node]
             [clojure.set :as set]
             #?(:cljs [cljs.reader :as reader]))
-  #?(:cljs (:require-macros [schism.vector-clock :as vc]))
+  #?(:cljs (:require-macros [schism.impl.vector-clock :as vc]))
   #?(:clj (:import (clojure.lang IPersistentCollection IPersistentMap IHashEq Associative ILookup Counted Seqable IMapIterable IKVReduce IFn IObj IMeta)
                    (java.io Writer)
                    (java.util Date Collection)

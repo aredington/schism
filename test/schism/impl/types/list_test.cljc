@@ -1,11 +1,11 @@
-(ns schism.types.list-test
+(ns schism.impl.types.list-test
   (:require #?(:clj [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer [deftest testing is]])
             #?(:cljs [cljs.reader :as reader])
-            [schism.types.list :as slist]
+            [schism.impl.types.list :as slist]
             [schism.node :as node]
             [schism.impl.protocols :as proto])
-  #?(:clj (:import schism.types.list.ConvergentList)))
+  #?(:clj (:import schism.impl.types.list.ConvergentList)))
 
 
 (defn clock-ahead [n f]

@@ -1,11 +1,11 @@
-(ns schism.types.map-test
+(ns schism.impl.types.map-test
   (:require #?(:clj [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer [deftest testing is]])
             #?(:cljs [cljs.reader :as reader])
-            [schism.types.map :as smap]
+            [schism.impl.types.map :as smap]
             [schism.node :as node]
             [schism.impl.protocols :as proto])
-  #?(:clj (:import schism.types.map.Map)))
+  #?(:clj (:import schism.impl.types.map.Map)))
 
 
 (defn clock-ahead [n f]

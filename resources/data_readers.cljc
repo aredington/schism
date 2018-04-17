@@ -1,4 +1,4 @@
-{schism/set schism.types.set/read-edn-set
- schism/map schism.types.map/read-edn-map
- schism/list schism.types.list/read-edn-list
- schism/vector schism.types.vector/read-edn-vector}
+{schism/set    schism.impl.types.set/read-edn-set
+ schism/map    schism.impl.types.map/read-edn-map
+ schism/list   schism.impl.types.list/read-edn-list
+ schism/vector schism.impl.types.vector/read-edn-vector}

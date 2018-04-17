@@ -1,13 +1,14 @@
-(ns schism.types.set
+(ns schism.impl.types.set
   "Definition and support for Schism's Convergent Set type, an ORSWOT
   implemented on top of Clojure's Persistent Set, Persistent Map and
   Schism's Vector Clock."
   (:require [schism.impl.protocols :as proto]
-            [schism.vector-clock :as vc]
+            [schism.impl.vector-clock :as vc]
+            [schism.impl.core :as ic]
             [schism.node :as node]
             [clojure.set :as set]
             #?(:cljs [cljs.reader :as reader]))
-  #?(:cljs (:require-macros [schism.vector-clock :as vc]))
+  #?(:cljs (:require-macros [schism.impl.vector-clock :as vc]))
   #?(:clj (:import (clojure.lang IPersistentCollection IPersistentSet IHashEq Counted Seqable RT IFn IObj IMeta)
                    (java.io Writer)
                    (java.util Date Collection)
@@ -182,6 +183,16 @@
                          (.-vclock orswot)
                          (dissoc (.-birth-dots orswot) o))))
 
+(defn- elemental-data
+  [^Set s]
+  {:vector-clock (.-vclock s)
+   :elements (into []
+                   (for [datum (.-data s)]
+                     (let [dot (get (.-birth-dots s) datum)]
+                       {:data datum
+                        :author-node (first dot)
+                        :record-time (last dot)})))})
+
 (extend-type Set
   proto/Vclocked
   (get-clock [this] (.-vclock this))
@@ -191,40 +202,22 @@
 
   proto/Convergent
   (synchronize [this ^Set other]
-    (let [own-clock (.-vclock this)
-          own-data (.-data this)
-          own-dots (.-birth-dots this)
-          own-meta (meta own-data)
-          other-clock (.-vclock other)
-          other-data (.-data other)
-          other-dots (.-birth-dots other)
-          retain (set/intersection own-data other-data)
-          timefn (memfn ^Date getTime)
-          other-addition-threshold (timefn (own-clock node/*current-node*))
-          other-additions (->> own-data
-                               (set/difference other-data)
-                               (remove #(> other-addition-threshold (timefn (last (other-dots %))))))
-          own-addition-threshold (->> other-clock
-                                      vals
-                                      (map timefn)
-                                      (apply max))
-          own-additions  (->> other-data
-                              (set/difference own-data)
-                              (remove #(>  own-addition-threshold (timefn (last (own-dots %))))))
-          completed-data (into retain (concat other-additions own-additions))
-          completed-birth-dots (->>  completed-data
-                                     (map (fn [e] (let [own-val (own-dots e)
-                                                        other-val (other-dots e)
-                                                        candidates (remove nil? [own-val other-val])]
-                                                    [e (if (> (count candidates) 1)
-                                                         (apply max-key (comp timefn last) candidates)
-                                                         (first candidates))])))
+    (let [own-meta (-> this .-data meta)
+          own-data (elemental-data this)
+          other-data (elemental-data other)
+          retain (filter (set/intersection (set (:elements own-data)) (set (:elements other-data)))
+                         (:elements own-data))
+          completed-elements (concat (apply ic/retain-elements
+                                       (ic/distinct-data own-data other-data))
+                                retain)
+          completed-data (into #{} (map :data completed-elements))
+          completed-birth-dots (->>  completed-elements
+                                     (map (fn [{:keys [data author-node record-time]}]
+                                            [data [author-node record-time]]))
                                      (into {}))
-          relevant-nodes (->> completed-birth-dots
-                              vals
-                              (map first)
-                              set)
-          completed-vclock (-> (merge-with (partial max-key timefn) own-clock other-clock)
+          relevant-nodes (set (map :author-node completed-elements))
+          completed-vclock (-> (partial max-key ic/timefn)
+                               (merge-with (:vector-clock own-data) (:vector-clock other-data))
                                (select-keys relevant-nodes))]
       (vc/update-clock _
                        (Set. (with-meta completed-data

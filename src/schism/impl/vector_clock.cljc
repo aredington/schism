@@ -1,4 +1,4 @@
-(ns schism.vector-clock
+(ns schism.impl.vector-clock
   "Utility functions for working with the vector clock of a value that
   participates in the Vclocked protocol."
   (:require [schism.impl.protocols :as sp]

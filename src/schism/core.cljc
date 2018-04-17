@@ -1,8 +1,8 @@
 (ns schism.core
-  (:require [schism.types.set :as sset]
-            [schism.types.map :as smap]
-            [schism.types.list :as slist]
-            [schism.types.vector :as svector]
+  (:require [schism.impl.types.set :as sset]
+            [schism.impl.types.map :as smap]
+            [schism.impl.types.list :as slist]
+            [schism.impl.types.vector :as svector]
             [schism.impl.protocols :as sp]
             [schism.node :as sn]))
 

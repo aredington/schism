@@ -1,14 +1,14 @@
-(ns schism.types.list
+(ns schism.impl.types.list
   "Definition and support for Schism's Convergent List type. The
   convergent list is a simple timestamped log of entries with a vector
   clock. Convergence places entries into the resultant list in
   insertion order. The vector clock conveys that an item has been
   removed from the list on another node."
   (:require [schism.impl.protocols :as proto]
-            [schism.vector-clock :as vc]
+            [schism.impl.vector-clock :as vc]
             [schism.node :as node]
             #?(:cljs [cljs.reader :as reader]))
-  #?(:cljs (:require-macros [schism.vector-clock :as vc]))
+  #?(:cljs (:require-macros [schism.impl.vector-clock :as vc]))
   #?(:clj (:import (clojure.lang IPersistentCollection IPersistentStack IReduce Counted IHashEq Seqable IObj IMeta ISeq)
                    (java.io Writer)
                    (java.util Date Collection)
