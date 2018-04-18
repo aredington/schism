@@ -42,14 +42,6 @@
 ;; clock is less than the birth dot of own's entry, then retain the
 ;; entry, as other never saw it and could not have removed it.
 
-;; Create a protocol for an abstract merge semantic. All of the
-;; current convergent types need to return: a) a vector clock and b) a
-;; collection of entries where each entry is "the data", the time it
-;; was added to the collection, and the originating node. The abstract
-;; merge returns: the completed vector clock and the entries to
-;; retain. It's then up to the individual impls to reconstitute the
-;; entries into a merged realization of the collection.
-
 (declare orswot-conj orswot-empty orswot-disj)
 
 #?(:clj (deftype Set [data vclock birth-dots]
@@ -205,7 +197,7 @@
     (let [own-meta (-> this .-data meta)
           own-data (elemental-data this)
           other-data (elemental-data other)
-          retain (filter (set/intersection (set (:elements own-data)) (set (:elements other-data)))
+          retain (filter (ic/common-elements own-data other-data)
                          (:elements own-data))
           completed-elements (concat (apply ic/retain-elements
                                        (ic/distinct-data own-data other-data))

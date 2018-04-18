@@ -32,12 +32,26 @@
         own-additions (remove #(> own-threshold (timefn (:record-time %))) (:elements own-data))]
     (concat other-additions own-additions)))
 
+(defn common-elements
+  "Accepts two maps of the form
+
+   {:vector-clock <map of nodes to update times>
+    :elements <vector of {:data <opaque value>
+                          :author-node <node-id>
+                          :record-time <Date object>}>}
+
+   Returns a vector of the common elements."
+  [a-data b-data]
+  (set/intersection (set (:elements a-data)) (set (:elements b-data))))
+
 (defn distinct-data
   "Accepts two maps of the form
-  {:vector-clock <map of nodes to update times>
-   :elements <vector of {:data <opaque value>
-                         :author-node <node-id>
-                         :record-time <Date object>}>}
+
+   {:vector-clock <map of nodes to update times>
+    :elements <vector of {:data <opaque value>
+                          :author-node <node-id>
+                          :record-time <Date object>}>}
+
    Returns a vector of the two maps with the common elements entries removed."
   [a-data b-data]
   (let [common-elements (set/intersection (set (:elements a-data)) (set (:elements b-data)))]

@@ -43,7 +43,17 @@
       (clock-ahead 1 #(let [other (node/with-node :converge-test-other-node
                                     (conj transfer [:c :d]))
                             result (proto/synchronize transfer other)]
-                        (is (= result {:a true :b 3 :c :d}))))))
+                        (is (= result {:a true :b 3 :c :d}))
+                        (is (= {:a true :b 3 :c :d} (.-data result)))
+                        (doseq [[k v] (.-vclock result)]
+                          (is (#{:converge-test-origin :converge-test-other-node} k))
+                          (is (instance? java.util.Date v)))
+                        (is (= #{:converge-test-origin :converge-test-other-node} (set (keys (.-vclock result)))))
+                        (is (= (set (keys (.-data result))) (set (keys (.-birth-dots result)))))
+                        (doseq [[key [node time]] (.-birth-dots result)]
+                          (is (#{:a :b :c} key))
+                          (is (#{:converge-test-origin :converge-test-other-node} node))
+                          (is (instance? java.util.Date time)))))))
   (testing "Dissoc on another node mirrored locally after converge."
     (node/initialize-node! :converge-test-origin)
     (let [transfer (smap/new-map :a true :b 3 :c :d)]
