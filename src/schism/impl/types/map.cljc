@@ -243,7 +243,7 @@
           own-data (elemental-data this)
           other-data (elemental-data other)
           retain (filter (ic/common-elements own-data other-data)
-                                 (:elements own-data))
+                         (:elements own-data))
           completed-elements (concat (apply ic/retain-elements
                                             (ic/distinct-data own-data other-data))
                                      retain)

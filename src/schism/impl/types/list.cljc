@@ -6,6 +6,7 @@
   removed from the list on another node."
   (:require [schism.impl.protocols :as proto]
             [schism.impl.vector-clock :as vc]
+            [schism.impl.core :as ic]
             [schism.node :as node]
             #?(:cljs [cljs.reader :as reader]))
   #?(:cljs (:require-macros [schism.impl.vector-clock :as vc]))
@@ -16,11 +17,11 @@
 
 ;; A CLJ & CLJS implementation of a convergent list
 
-;; Each list maintains its own vector clock, and insertion times for
-;; each element of the list. ConvergentList entries and insertions are
-;; correlated positionally (as the list may contain the same item
-;; multiple times.) Insertion times dictate ordering. The vector clock
-;; determines if an entry has been removed.
+;; Each list maintains its own vector clock, and insertion times and
+;; nodes for each element of the list. ConvergentList entries and
+;; insertions are correlated positionally (as the list may contain the
+;; same item multiple times.) Insertion times dictate ordering. The
+;; vector clock determines if an entry has been removed.
 
 (declare clist-conj clist-rest clist-empty)
 
@@ -167,6 +168,15 @@
                                     (.-vclock clist)
                                     (rest (.-insertions clist)))))
 
+(defn- elemental-data
+  [^ConvergentList l]
+  {:vector-clock (.vclock l)
+   :elements (into []
+                   (for [[datum [author-node record-time]] (map vector (.-data l) (.-insertions l))]
+                     {:data datum
+                      :author-node author-node
+                      :record-time record-time}))})
+
 (extend-type ConvergentList
   proto/Vclocked
   (get-clock [this] (.-vclock this))
@@ -176,39 +186,34 @@
 
   proto/Convergent
   (synchronize [this ^ConvergentList other]
-    (let [own-clock (.-vclock this)
-          own-data (.-data this)
-          own-insertions (.-insertions this)
-          own-tuples (map (partial apply vector) own-data own-insertions)
-          own-meta (meta own-data)
-          other-clock (.-vclock this)
-          other-data (.-data other)
-          other-insertions (.-insertions other)
-          other-tuples (map (partial apply vector) other-data other-insertions)
-          ;; Can't use set logic because could insert the same value
-          ;; multiple times in the same millisecond: instead find the
-          ;; common tail between own and other data.
-          common-tail (->> (map vector (reverse own-tuples) (reverse other-tuples))
-                           (take-while (partial apply =))
-                           reverse
-                           (map first))
-          timefn (memfn ^Date getTime)
-          other-addition-threshold (timefn (own-clock node/*current-node*))
-          other-addition-tuples (take-while #(< other-addition-threshold (timefn (last %))) other-tuples)
-          own-addition-threshold (->> other-clock
-                                      vals
-                                      (map timefn)
-                                      (apply max))
-          own-addition-tuples (take-while #(< own-addition-threshold (timefn (last %))) own-tuples)
-          common-addition-tuples (->> (into '() (concat own-addition-tuples other-addition-tuples))
-                                      (sort-by last))
-          all-tuples (concat common-addition-tuples common-tail)
-          merged-vclock (merge-with (partial max-key timefn) own-clock other-clock)]
+    (let [own-meta (-> this .-data meta)
+          own-data (elemental-data this)
+          other-data (elemental-data other)
+          retain (->> (reverse (:elements other-data))
+                      (map vector (reverse (:elements own-data)))
+                      (take-while (partial apply =))
+                      reverse
+                      (map first))
+          completed-elements (concat (apply ic/retain-elements
+                                            (ic/distinct-data own-data other-data))
+                                     retain)
+          completed-data (->> completed-elements
+                              (map :data)
+                              (into '())
+                              reverse)
+          completed-insertions (->> completed-elements
+                                    (map (fn [{:keys [author-node record-time]}]
+                                           [author-node record-time]))
+                                    (into '())
+                                    reverse)
+          relevant-nodes (set (map :author-node completed-elements))
+          completed-vclock (-> (partial max-key ic/timefn)
+                               (merge-with (:vector-clock own-data) (:vector-clock other-data))
+                               (select-keys relevant-nodes))]
       (vc/update-clock _
-                       (ConvergentList. (with-meta (map first all-tuples)
-                                          own-meta)
-                                        merged-vclock
-                                        (map #(subvec % 1) all-tuples))))))
+                       (ConvergentList. (with-meta completed-data own-meta)
+                                        completed-vclock
+                                        completed-insertions)))))
 
 #?(:clj (defmethod print-method ConvergentList
           [^ConvergentList l ^Writer writer]
