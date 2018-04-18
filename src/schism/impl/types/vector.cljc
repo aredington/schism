@@ -7,6 +7,7 @@
   that an item has been removed from the vector on another node."
   (:require [schism.impl.protocols :as proto]
             [schism.impl.vector-clock :as vc]
+            [schism.impl.core :as ic]
             [schism.node :as node]
             [clojure.set :as set]
             #?(:cljs [cljs.reader :as reader]))
@@ -253,6 +254,17 @@
   #?(:clj Long/MAX_VALUE
      :cljs (.-MAX_SAFE_INTEGER js/Number)))
 
+(defn- elemental-data
+  [^ConvergentVector v]
+  {:vector-clock (.vclock v)
+   :elements (into []
+                   (for [[element [author-node insert-index record-time]]
+                         (map vector (.-data v) (.-insertions v))]
+                     {:data {:element element
+                             :insert-index insert-index}
+                      :author-node author-node
+                      :record-time record-time}))})
+
 (extend-type ConvergentVector
   proto/Vclocked
   (get-clock [this] (.-vclock this))
@@ -262,15 +274,19 @@
 
   proto/Convergent
   (synchronize [this ^ConvergentVector other]
-    (let [own-clock (.-vclock this)
-          own-data (.-data this)
-          own-insertions (.-insertions this)
-          own-tuples (map (partial apply vector) own-data own-insertions)
-          own-meta (meta own-data)
-          other-clock (.-vclock this)
-          other-data (.-data other)
-          other-insertions (.-insertions other)
-          other-tuples (map (partial apply vector) other-data other-insertions)
+    (let [own-meta (-> this .-data meta)
+          own-data (elemental-data this)
+          other-data (elemental-data other)
+          retain (filter (ic/common-elements own-data other-data)
+                         (:elements own-data))
+          completed-elements (->> retain
+                                  (concat (apply ic/retain-elements
+                                                 (ic/distinct-data own-data other-data)))
+                                  (sort-by (fn [{:keys [author-node data record-time]}]
+                                             (let [{:keys [insert-index]} data]
+                                               [(if (= -1 insert-index)
+                                                  tail-insertion-sort-value
+                                                  insert-index) record-time]))))
           ;; Given the potential for insertion at arbitrary indexes,
           ;; trying to find a common contiguous chunk is less fruitful
           ;; than taking our [element, node, index, timestamp] tuples
@@ -282,31 +298,25 @@
           ;; of convergence, it is not important to preserve ordering
           ;; through convergence, which affords using set logic to
           ;; find the common insertions.
-          common-tuples (set/intersection (set own-tuples) (set other-tuples))
-          timefn (memfn ^Date getTime)
-          other-addition-threshold (timefn (own-clock node/*current-node*))
-          other-addition-tuples (filter #(< other-addition-threshold (timefn (last %))) other-tuples)
-          own-addition-threshold (->> other-clock
-                                      vals
-                                      (map timefn)
-                                      (apply max))
-          own-addition-tuples (filter #(< own-addition-threshold (timefn (last %))) own-tuples)
-          retain-tuples (into common-tuples (concat other-addition-tuples own-addition-tuples))
-          merged-vclock (merge-with (partial max-key timefn) own-clock other-clock)
-          {:keys [data insertions]} (reduce (fn [m [v n i t]]
-                                              (-> m
-                                                  (update :data #(assoc-n-with-tail-support % i v))
-                                                  (update :insertions #(assoc-n-with-tail-support % i [n i t]))))
-                                            {:data [] :insertions []}
-                                            (sort-by (fn [[_ _ i t]]
-                                                       [(if (= -1 i)
-                                                          tail-insertion-sort-value
-                                                          i) t]) retain-tuples))]
+          completed-data (reduce (fn [m element]
+                                   (let [{:keys [element insert-index]} (:data element)]
+                                     (assoc-n-with-tail-support m insert-index element)))
+                                 []
+                                 completed-elements)
+          completed-insertions (reduce (fn [m {:keys [author-node record-time]
+                                               {:keys [insert-index]} :data}]
+                                         (assoc-n-with-tail-support m insert-index
+                                                                    [author-node insert-index record-time]))
+                                       []
+                                       completed-elements)
+          relevant-nodes (set (map :author-node completed-elements))
+          completed-vclock (-> (partial max-key ic/timefn)
+                               (merge-with (:vector-clock own-data) (:vector-clock other-data))
+                               (select-keys relevant-nodes))]
       (vc/update-clock _
-                       (ConvergentVector. (with-meta data
-                                            own-meta)
-                                          merged-vclock
-                                          insertions)))))
+                       (ConvergentVector. (with-meta completed-data own-meta)
+                                          completed-vclock
+                                          completed-insertions)))))
 
 #?(:clj (defmethod print-method ConvergentVector
           [^ConvergentVector v ^Writer writer]
