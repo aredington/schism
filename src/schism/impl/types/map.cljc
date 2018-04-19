@@ -252,10 +252,7 @@
                                     (map (fn [{:keys [data author-node record-time]}]
                                            [(key data) [author-node record-time]]))
                                     (into {}))
-          relevant-nodes (set (map :author-node completed-elements))
-          completed-vclock (-> (partial max-key ic/timefn)
-                               (merge-with (:vector-clock own-data) (:vector-clock other-data))
-                               (select-keys relevant-nodes))]
+          completed-vclock (ic/merged-clock completed-elements own-data other-data)]
       (vc/update-clock _
                        (Map. (with-meta completed-data
                                own-meta)

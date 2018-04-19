@@ -61,7 +61,20 @@
                                     (disj transfer :c))
                             result (proto/synchronize transfer other)]
                         (is (= other #{:a :b}))
-                        (is (= result #{:a :b})))))))
+                        (is (= result #{:a :b}))))))
+  (testing "Concurrent converges will not resolve to a
+  mutually-exclusive addition when vector clocks will support it."
+    (node/initialize-node! :converge-test-origin)
+    (let [transfer (-> (sset/new-set :a)
+                       (conj :b))]
+      (clock-ahead 1 (fn []
+                       (let [iterate (conj transfer :d)]
+                         (clock-ahead 1
+                                      (fn []
+                                        (let [other (node/with-node :converge-test-other-node
+                                                      (conj transfer :c))
+                                              result (proto/synchronize iterate other)]
+                                          (is (= result #{:a :b :c :d})))))))))))
 
 (deftest seqable-test
   (testing "Can turn an ORSWOT into a seq"

@@ -309,10 +309,7 @@
                                                                     [author-node insert-index record-time]))
                                        []
                                        completed-elements)
-          relevant-nodes (set (map :author-node completed-elements))
-          completed-vclock (-> (partial max-key ic/timefn)
-                               (merge-with (:vector-clock own-data) (:vector-clock other-data))
-                               (select-keys relevant-nodes))]
+          completed-vclock (ic/merged-clock completed-elements own-data other-data)]
       (vc/update-clock _
                        (ConvergentVector. (with-meta completed-data own-meta)
                                           completed-vclock
