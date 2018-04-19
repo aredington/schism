@@ -35,16 +35,19 @@ will have different results than structures which will embrace the
 costs of tombstones.
 
 For example, Schism's set may drop a recently added element during
-convergence if two nodes working on that set both add elements to the
-set and then converge their resulting sets. While this quality is
+convergence with certain vector clock states. While this quality is
 undesirable, I accept it more readily than monotonically increasing
 storage requirements for data explicitly intended for communication
-between nodes.
+between nodes. Future work may pursue allowing for the convergence
+operation to have some configurability so that vector clocks will
+retain information more eagerly to reduce the incidence of this phenomena.
 
 ## Usage
 
-`schism.core` contains functions for generating new empty collections,
-e.g. `schism.core/convergent-set`.
+`schism.core` contains functions for generating new collections,
+e.g. `schism.core/convergent-set`. These functions accept arguments
+much like their Clojure core equivalents, so `(convergent-set :a :b
+:c)` creates a set equivalent to `#{:a :b :c}`
 
 These collections support Clojure's collection operations with the
 same semantic consequences (save for above mentioned performance and
@@ -53,7 +56,7 @@ and a Clojure collection's behavior is a bug. Please file a report, as
 these should be relatively fast and easy to fix.
 
 String coercion of a schism collection is identical to that of a
-Clojure collection, e.g. a convergent set will print at the console as
+Clojure collection, e.g. a convergent set will coerce to a string as
 `#{:a :b :c}`. However, `pr-str` will generate a longer
 tagged literal containing all synchronization data for the structure
 to operate correctly. Schism eagerly enables edn readers for its
@@ -81,12 +84,11 @@ identifiers, schism's convergence behavior is undefined. (Don't do
 this). If you do not explicitly invoke `initialize-node!`, it is left
 at the value `nil`.
 
-## Todo
+## Further work
 
-- Vectors
-- Lists
-- Transit support
 - Property based tests
+- Configurable convergence
+- Other good ideas as the community provides them
 
 ## Contributing
 

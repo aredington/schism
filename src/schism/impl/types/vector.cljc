@@ -17,13 +17,15 @@
                    (java.util Date Collection)
                    (java.lang Object Long))))
 
-;; A CLJ & CLJS implementation of a convergent list
+;; A CLJ & CLJS implementation of a convergent vector
 
-;; Each list maintains its own vector clock, and insertion times for
-;; each element of the list. List entries and insertions are
-;; correlated positionally (as the list may contain the same item
-;; multiple times.) Insertion times dictate ordering. The vector clock
-;; determines if an entry has been removed.
+;; Each vector maintains its own vector clock, and insertion times and
+;; positions for each element of the vector. Vector entries and
+;; insertions are correlated positionally (as the vector may contain
+;; the same item multiple times.) Insertion times and indices dictate
+;; ordering; elements inserted at the tail of the vector are recorded
+;; as being inserted with index -1. The vector clock determines if an
+;; entry has been removed.
 
 (declare cvector-conj cvector-pop cvector-empty cvector-assoc)
 

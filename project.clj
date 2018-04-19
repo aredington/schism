@@ -1,4 +1,4 @@
-(defproject com.holychao/schism "0.1.0-SNAPSHOT"
+(defproject com.holychao/schism "0.1.0"
   :description "First Class CRDTs for Clojure"
   :url "https://github.com/aredington/schism"
   :license {:name "MIT License"
