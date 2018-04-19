@@ -4,6 +4,17 @@ A batteries included library of CRDT implementations of Clojure's core
 data types: Sets, Maps, Vectors, and Lists with support for distributed
 modification and eventual consistency.
 
+## Dependency Information
+
+Latest release: 0.1.0
+
+[Leiningen](http://github.com/technomancy/leiningen/) and [Boot](http://boot-clj.com)
+dependency information:
+
+```
+[com.holychao/schism "0.1.0"]
+```
+
 ## Motivation
 
 Clojure is one of a handful of languages which can be authored and
