@@ -74,7 +74,8 @@
           (spliterator [this] (.spliterator ^java.util.List (.data this)))
           (subList [this i j] (.subList ^java.util.List (.data this) i j))
           (toArray [this] (.toArray ^java.util.List (.data this)))
-          (toArray [this a] (.toArray ^java.util.List (.data this) a))
+          (^"[Ljava.lang.Object;" toArray [this ^"[Ljava.lang.Object;" a]
+           (.toArray ^java.util.List (.-data this) a))
 
           IObj
           (withMeta [this meta]

@@ -75,8 +75,9 @@
           (seq [this] (.seq ^Seqable (.data this)))
 
           java.util.Set
-          (toArray [this] (.toArray ^java.util.Set (.data this)))
-          (toArray [this a] (.toArray ^java.util.Set (.data this) a))
+          (toArray [this] (.toArray (.-data this)))
+          (^"[Ljava.lang.Object;" toArray [this ^"[Ljava.lang.Object;" a]
+           (.toArray ^java.util.Set (.-data this) a))
           (add [this o] (throw (UnsupportedOperationException.)))
           (remove [this o] (throw (UnsupportedOperationException.)))
           (addAll [this c] (throw (UnsupportedOperationException.)))
