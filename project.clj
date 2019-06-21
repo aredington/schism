@@ -3,12 +3,12 @@
   :url "https://github.com/aredington/schism"
   :license {:name "MIT License"
             :url "https://opensource.org/licenses/MIT"}
-  :dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]
-                 [org.clojure/clojurescript "1.9.946" :scope "provided"]]
-  :plugins [[lein-cljsbuild "1.1.5"]
-            [lein-doo "0.1.8"]]
-  :profiles {:dev {:dependencies [[doo "0.1.8"]
-                                  [org.clojure/test.check "0.10.0-alpha2"]]}}
+  :dependencies [[org.clojure/clojure "1.10.0" :scope "provided"]
+                 [org.clojure/clojurescript "1.10.520" :scope "provided"]]
+  :plugins [[lein-cljsbuild "1.1.7"]
+            [lein-doo "0.1.11"]]
+  :profiles {:dev {:dependencies [[doo "0.1.11"]
+                                  [org.clojure/test.check "0.10.0-alpha4"]]}}
   :cljsbuild {:builds [{:id "test"
                         :source-paths ["src" "test"]
                         :compiler {:output-to     "target/test.js"
@@ -21,4 +21,4 @@
                                    :parallel-build true
                                    :checked-arrays :warn}}]}
   :clean-targets ^{:protect false} ["target"]
-  :aliases {"test-platforms" ["do" "clean," "test," "doo" "chrome" "test" "once"]})
+  :aliases {"test-platforms" ["do" "clean," "test," "doo" "chrome-headless" "test" "once"]})
