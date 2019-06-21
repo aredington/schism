@@ -13,3 +13,8 @@
   a map of node IDs to timestamps.")
   (with-clock [clocked clock] "Returns a new structure derived from
   `clocked`, associating `clock` with the returned value."))
+
+(extend-protocol Vclocked
+  nil
+  (get-clock [_] {})
+  (with-clock [_ clock] nil))
