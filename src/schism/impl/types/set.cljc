@@ -157,21 +157,21 @@
 
 (defn orswot-conj
   [^Set orswot o]
-  (vc/update-clock now
+  (vc/update-clock now orswot
                    (Set. (conj (.-data orswot) o)
                          (.-vclock orswot)
                          (assoc (.-birth-dots orswot) o [node/*current-node* now]))))
 
 (defn orswot-empty
   [^Set orswot]
-  (vc/update-clock _
+  (vc/update-clock _ orswot
                    (Set. (hash-set)
                          (hash-map)
                          (hash-map))))
 
 (defn orswot-disj
   [^Set orswot o]
-  (vc/update-clock _
+  (vc/update-clock _ orswot
                    (Set. (disj (.-data orswot) o)
                          (.-vclock orswot)
                          (dissoc (.-birth-dots orswot) o))))
@@ -209,7 +209,7 @@
                                             [data [author-node record-time]]))
                                      (into {}))
           completed-vclock (ic/merged-clock completed-elements own-data other-data)]
-      (vc/update-clock _
+      (vc/update-clock _ this
                        (Set. (with-meta completed-data
                                own-meta)
                              completed-vclock
@@ -236,7 +236,7 @@
   ([] (Set. (hash-set)
             (hash-map)
             (hash-map)))
-  ([& args] (vc/update-clock now
+  ([& args] (vc/update-clock now nil
                              (Set. (apply hash-set args)
                                    (hash-map)
                                    (apply hash-map

@@ -15,7 +15,7 @@
 (deftest update-clock-test
   (node/initialize-node! :clock-test-node)
   (let [test (->SimpleClocked nil {})
-        updated (vc/update-clock time
+        updated (vc/update-clock time test
                                  (assoc test :last-time time))
         time (:last-time updated)]
     (is (= {:clock-test-node time} (proto/get-clock updated)))

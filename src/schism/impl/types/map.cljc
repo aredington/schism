@@ -194,28 +194,28 @@
 
 (defn ormwot-conj
   [^Map ormwot pair]
-  (vc/update-clock now
+  (vc/update-clock now ormwot
                    (Map. (conj (.-data ormwot) pair)
                          (.-vclock ormwot)
                          (assoc (.-birth-dots ormwot) (first pair) [node/*current-node* now]))))
 
 (defn ormwot-empty
   [^Map ormwot]
-  (vc/update-clock _
+  (vc/update-clock _ ormwot
                    (Map. (hash-map)
                          (hash-map)
                          (hash-map))))
 
 (defn ormwot-assoc
   [^Map ormwot k v]
-  (vc/update-clock now
+  (vc/update-clock now ormwot
                    (Map. (assoc (.-data ormwot) k v)
                          (.-vclock ormwot)
                          (assoc (.-birth-dots ormwot) k [node/*current-node* now]))))
 
 (defn ormwot-dissoc
   [^Map ormwot k]
-  (vc/update-clock _
+  (vc/update-clock _ ormwot
                    (Map. (dissoc (.-data ormwot) k)
                          (.-vclock ormwot)
                          (dissoc (.-birth-dots ormwot) k))))
@@ -253,7 +253,7 @@
                                            [(key data) [author-node record-time]]))
                                     (into {}))
           completed-vclock (ic/merged-clock completed-elements own-data other-data)]
-      (vc/update-clock _
+      (vc/update-clock _ this
                        (Map. (with-meta completed-data
                                own-meta)
                              completed-vclock
@@ -280,7 +280,7 @@
   ([] (Map. (hash-map)
             (hash-map)
             (hash-map)))
-  ([& args] (vc/update-clock now
+  ([& args] (vc/update-clock now nil
                              (Map. (apply hash-map args)
                                    (hash-map)
                                    (apply hash-map

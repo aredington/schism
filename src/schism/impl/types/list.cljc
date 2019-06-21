@@ -152,19 +152,19 @@
              (clist-rest this))))
 
 (defn clist-conj [^ConvergentList clist o]
-  (vc/update-clock now
+  (vc/update-clock now clist
                    (ConvergentList. (conj (.-data clist) o)
                                     (.-vclock clist)
                                     (conj (.-insertions clist) [node/*current-node* now]))))
 
 (defn clist-empty [^ConvergentList clist]
-  (vc/update-clock _
+  (vc/update-clock _ clist
                    (ConvergentList. (list)
                                     (hash-map)
                                     (list))))
 
 (defn clist-rest [^ConvergentList clist]
-  (vc/update-clock _
+  (vc/update-clock _ clist
                    (ConvergentList. (rest (.-data clist))
                                     (.-vclock clist)
                                     (rest (.-insertions clist)))))
@@ -208,7 +208,7 @@
                                     (into '())
                                     reverse)
           completed-vclock (ic/merged-clock completed-elements own-data other-data)]
-      (vc/update-clock _
+      (vc/update-clock _ this
                        (ConvergentList. (with-meta completed-data own-meta)
                                         completed-vclock
                                         completed-insertions)))))
@@ -234,7 +234,7 @@
   ([] (ConvergentList. (list)
                        (hash-map)
                        (list)))
-  ([& args] (vc/update-clock now
+  ([& args] (vc/update-clock now nil
                              (ConvergentList. (apply list args)
                                               (hash-map)
                                               (apply list (repeat (count args) [node/*current-node* now]))))))

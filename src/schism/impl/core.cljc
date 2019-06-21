@@ -3,18 +3,28 @@
             [clojure.set :as set])
   #?(:clj (:import (java.util Date))))
 
-(def timefn (memfn ^Date getTime))
+(def to-millis (memfn ^Date getTime))
+
+(defn to-date
+  [millis]
+  #?(:clj (Date. millis)
+     :cljs (js/Date. millis)))
+
+(defn now
+  []
+  #?(:clj (Date.)
+     :cljs (js/Date.)))
 
 (defn node-and-threshold
   [data]
   (->> data
        :vector-clock
        (reduce-kv (fn [[node time] candidate-node candidate-time]
-                    (if (< (timefn time) (timefn candidate-time))
+                    (if (< (to-millis time) (to-millis candidate-time))
                       [candidate-node candidate-time]
                       [node time]))
                    (-> data :vector-clock first))
-       (#(update % 1 timefn))))
+       (#(update % 1 to-millis))))
 
 (defn retain-elements
   "Accepts two maps of the form
@@ -26,21 +36,21 @@
 
   Returns a seq of elements to be retained using ORSWOT merge semantics."
   [own-data other-data]
-  (let [other-threshold (-> own-data :vector-clock (get node/*current-node*) timefn)
+  (let [other-threshold (-> own-data :vector-clock (get node/*current-node*) to-millis)
         [other-node own-threshold] (node-and-threshold other-data)
         own-vclock-for-other (-> own-data :vector-clock (get other-node))
         other-vclock-limiter (if own-vclock-for-other
                                (fn [{:keys [record-time] :as element}]
-                                 (>= (timefn own-vclock-for-other) (timefn record-time)))
+                                 (>= (to-millis own-vclock-for-other) (to-millis record-time)))
                                (constantly true))
         other-vclock-for-own (-> other-data :vector-clock (get node/*current-node*))
         own-vclock-limiter (if other-vclock-for-own
                              (fn [{:keys [record-time] :as element}]
-                               (>= (timefn other-vclock-for-own) (timefn record-time)))
+                               (>= (to-millis other-vclock-for-own) (to-millis record-time)))
                              (constantly true))
-        other-additions (remove #(and (> other-threshold (timefn (:record-time %)))
+        other-additions (remove #(and (> other-threshold (to-millis (:record-time %)))
                                       (other-vclock-limiter %)) (:elements other-data))
-        own-additions (remove #(and (> own-threshold (timefn (:record-time %)))
+        own-additions (remove #(and (> own-threshold (to-millis (:record-time %)))
                                     (own-vclock-limiter %)) (:elements own-data))]
     (concat other-additions own-additions)))
 
@@ -83,5 +93,5 @@
   referenced as :author-node in elements."
   [elements & datasets]
   (let [relevant-nodes (set (map :author-node elements))]
-    (-> (apply merge-with (partial max-key timefn) (map :vector-clock datasets))
+    (-> (apply merge-with (partial max-key to-millis) (map :vector-clock datasets))
         (select-keys relevant-nodes))))

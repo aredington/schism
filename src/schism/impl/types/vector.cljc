@@ -222,25 +222,25 @@
              (-kv-reduce (.-data this) f init))))
 
 (defn cvector-conj [^ConvergentVector cvector o]
-  (vc/update-clock now
+  (vc/update-clock now cvector
                    (ConvergentVector. (conj (.-data cvector) o)
                                       (.-vclock cvector)
                                       (conj (.-insertions cvector) [node/*current-node* -1 now]))))
 
 (defn cvector-empty [^ConvergentVector cvector]
-  (vc/update-clock _
+  (vc/update-clock _ cvector
                    (ConvergentVector. (vector)
                                       (hash-map)
                                       (vector))))
 
 (defn cvector-pop [^ConvergentVector cvector]
-  (vc/update-clock _
+  (vc/update-clock _ cvector
                    (ConvergentVector. (pop (.-data cvector))
                                       (.-vclock cvector)
                                       (pop (.-insertions cvector)))))
 
 (defn cvector-assoc [^ConvergentVector cvector k v]
-  (vc/update-clock now
+  (vc/update-clock now cvector
                    (ConvergentVector. (assoc (.-data cvector) k v)
                                       (.-vclock cvector)
                                       (assoc (.-insertions cvector) k [node/*current-node* k now]))))
@@ -314,7 +314,7 @@
                                        []
                                        completed-elements)
           completed-vclock (ic/merged-clock completed-elements own-data other-data)]
-      (vc/update-clock _
+      (vc/update-clock _ this
                        (ConvergentVector. (with-meta completed-data own-meta)
                                           completed-vclock
                                           completed-insertions)))))
@@ -340,7 +340,7 @@
   ([] (ConvergentVector. (vector)
                          (hash-map)
                          (vector)))
-  ([& args] (vc/update-clock now
+  ([& args] (vc/update-clock now nil
                              (ConvergentVector. (apply vector args)
                                                 (hash-map)
                                                 (apply vector (for [i (range (count args))]
