@@ -56,3 +56,8 @@
   provided. If invoked with no argument, initializes the current node
   to a random UUID."
   sn/initialize-node!)
+
+(defmacro with-node
+  "Run `body` with the current node set to `node-id`"
+  [id & body]
+  `(sn/with-node ~id ~@body))
