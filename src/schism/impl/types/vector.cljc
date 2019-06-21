@@ -31,78 +31,78 @@
 
 #?(:clj (deftype ConvergentVector [data vclock insertions]
           Counted
-          (count [this] (.count ^Counted (.data this)))
+          (count [this] (.count ^Counted (.-data this)))
 
           IPersistentCollection
           (cons [this o] (cvector-conj this o))
           (empty [this] (cvector-empty this))
-          (equiv [this other] (.equiv ^IPersistentCollection (.data this) other))
+          (equiv [this other] (.equiv ^IPersistentCollection (.-data this) other))
 
           Object
           (equals [this o]
-            (.equals (.data this) o))
+            (.equals (.-data this) o))
           (hashCode [this]
-            (.hashCode (.data this)))
+            (.hashCode (.-data this)))
           (toString [this]
-            (.toString (.data this)))
+            (.toString (.-data this)))
 
           IHashEq
           (hasheq [this]
-            (.hasheq ^IHashEq (.data this)))
+            (.hasheq ^IHashEq (.-data this)))
 
           Seqable
           (seq [this]
-            (seq ^Seqable (.data this)))
+            (seq ^Seqable (.-data this)))
 
           java.util.List
-          (add [this o] (.add ^java.util.List (.data this) o))
-          (add [this index o] (.add ^java.util.List (.data this) index o))
-          (addAll [this c] (.addAll ^java.util.List (.data this) c))
-          (clear [this] (.clear ^java.util.List (.data this)))
-          (contains [this o] (.contains ^java.util.List (.data this) o))
-          (containsAll [this c] (.containsAll ^java.util.List (.data this) c))
-          (get [this i] (.get ^java.util.List (.data this) i))
-          (indexOf [this o] (.indexOf ^java.util.List (.data this) o))
-          (isEmpty [this] (.isEmpty ^java.util.List (.data this)))
-          (iterator [this] (.iterator ^java.util.List (.data this)))
-          (lastIndexOf [this o] (.lastIndexOf ^java.util.List (.data this) o))
-          (listIterator [this] (.listIterator ^java.util.List (.data this)))
-          (^Object remove [this ^int i] (.remove ^java.util.List (.data this) i))
-          (^boolean remove [this ^Object o] (.remove ^java.util.List (.data this) o))
-          (removeAll [this c] (.removeAll ^java.util.List (.data this) c))
-          (replaceAll [this op] (.replaceAll ^java.util.List (.data this) op))
-          (retainAll [this c] (.retainAll ^java.util.List (.data this) c))
-          (set [this i e] (.set ^java.util.List (.data this) i e))
-          (size [this] (.size ^java.util.List (.data this)))
-          (sort [this c] (.sort ^java.util.List (.data this) c))
-          (spliterator [this] (.spliterator ^java.util.List (.data this)))
-          (subList [this i j] (.subList ^java.util.List (.data this) i j))
-          (toArray [this] (.toArray ^java.util.List (.data this)))
+          (add [this o] (.add ^java.util.List (.-data this) o))
+          (add [this index o] (.add ^java.util.List (.-data this) index o))
+          (addAll [this c] (.addAll ^java.util.List (.-data this) c))
+          (clear [this] (.clear ^java.util.List (.-data this)))
+          (contains [this o] (.contains ^java.util.List (.-data this) o))
+          (containsAll [this c] (.containsAll ^java.util.List (.-data this) c))
+          (get [this i] (.get ^java.util.List (.-data this) i))
+          (indexOf [this o] (.indexOf ^java.util.List (.-data this) o))
+          (isEmpty [this] (.isEmpty ^java.util.List (.-data this)))
+          (iterator [this] (.iterator ^java.util.List (.-data this)))
+          (lastIndexOf [this o] (.lastIndexOf ^java.util.List (.-data this) o))
+          (listIterator [this] (.listIterator ^java.util.List (.-data this)))
+          (^Object remove [this ^int i] (.remove ^java.util.List (.-data this) i))
+          (^boolean remove [this ^Object o] (.remove ^java.util.List (.-data this) o))
+          (removeAll [this c] (.removeAll ^java.util.List (.-data this) c))
+          (replaceAll [this op] (.replaceAll ^java.util.List (.-data this) op))
+          (retainAll [this c] (.retainAll ^java.util.List (.-data this) c))
+          (set [this i e] (.set ^java.util.List (.-data this) i e))
+          (size [this] (.size ^java.util.List (.-data this)))
+          (sort [this c] (.sort ^java.util.List (.-data this) c))
+          (spliterator [this] (.spliterator ^java.util.List (.-data this)))
+          (subList [this i j] (.subList ^java.util.List (.-data this) i j))
+          (toArray [this] (.toArray ^java.util.List (.-data this)))
           (^"[Ljava.lang.Object;" toArray [this ^"[Ljava.lang.Object;" a]
            (.toArray ^java.util.List (.-data this) a))
 
 
           IObj
           (withMeta [this meta]
-            (ConvergentVector. (with-meta ^IObj (.data this)
+            (ConvergentVector. (with-meta ^IObj (.-data this)
                                  meta)
-                               (.vclock this)
-                               (.insertions this)))
+                               (.-vclock this)
+                               (.-insertions this)))
 
           IMeta
           (meta [this]
-            (.meta ^IMeta (.data this)))
+            (.meta ^IMeta (.-data this)))
 
           IReduce
           (reduce [this f]
-            (.reduce ^IReduce (.data this) f))
+            (.reduce ^IReduce (.-data this) f))
 
           IKVReduce
           (kvreduce [this f init]
-            (.kvreduce ^IKVReduce (.data this) f init))
+            (.kvreduce ^IKVReduce (.-data this) f init))
 
           IPersistentStack
-          (peek [this] (.peek ^IPersistentStack (.data this)))
+          (peek [this] (.peek ^IPersistentStack (.-data this)))
           (pop [this]
             (cvector-pop this))
 
@@ -112,23 +112,23 @@
 
           Associative
           (containsKey [this k]
-            (.containsKey ^Associative (.data this) k))
+            (.containsKey ^Associative (.-data this) k))
           (entryAt [this k]
-            (.entryAt ^Associative (.data this) k))
+            (.entryAt ^Associative (.-data this) k))
           (assoc [this k v]
             (cvector-assoc this k v))
 
           Indexed
           (nth [this i]
-            (.indexed ^Indexed (.data this) i))
+            (.indexed ^Indexed (.-data this) i))
           (nth [this i not-found]
-            (.indexed ^Indexed (.data this) i not-found))
+            (.indexed ^Indexed (.-data this) i not-found))
 
           IFn
           (invoke [this k]
-            (.invoke ^IFn (.data this) k))
+            (.invoke ^IFn (.-data this) k))
           (invoke [this k not-found]
-            (.invoke ^IFn (.data this) k not-found)))
+            (.invoke ^IFn (.-data this) k not-found)))
    :cljs (deftype ConvergentVector [data vclock insertions]
            ICounted
            (-count [this] (-count (.-data this)))
@@ -260,7 +260,7 @@
 
 (defn- elemental-data
   [^ConvergentVector v]
-  {:vector-clock (.vclock v)
+  {:vector-clock (.-vclock v)
    :elements (into []
                    (for [[element [author-node insert-index record-time]]
                          (map vector (.-data v) (.-insertions v))]
@@ -322,11 +322,11 @@
 #?(:clj (defmethod print-method ConvergentVector
           [^ConvergentVector v ^Writer writer]
           (.write writer "#schism/vector [")
-          (.write writer (pr-str (.data v)))
+          (.write writer (pr-str (.-data v)))
           (.write writer ", ")
-          (.write writer (pr-str (.vclock v)))
+          (.write writer (pr-str (.-vclock v)))
           (.write writer ", ")
-          (.write writer (pr-str (.insertions v)))
+          (.write writer (pr-str (.-insertions v)))
           (.write writer "]")))
 
 (defn read-edn-vector

@@ -7,12 +7,6 @@
             [schism.impl.protocols :as proto])
   #?(:clj (:import schism.impl.types.set.Set)))
 
-
-(defn clock-ahead [n f]
-  #?(:clj (do (Thread/sleep n)
-              (f))
-     :cljs (js/setTimeout n f)))
-
 (deftest basic-IPC-ops
   (testing "Equiv for sets"
     (is (= (sset/new-set) #{}))
@@ -39,42 +33,41 @@
     ;; Can only rely on millisecond time scales, so sleep 1 second
     ;; between ops so that there's some non-zero passage of time
     (let [transfer (-> (sset/new-set :a)
-                       (conj :b))]
-      (clock-ahead 1 #(let [other (node/with-node :converge-test-other-node
-                                    (conj transfer :c))
-                            result (proto/synchronize transfer other)]
-                        (is (= result #{:a :b :c}))
-                        (is (= #{:a :b :c} (.-data result)))
-                        (doseq [[k v] (.-vclock result)]
-                          (is (#{:converge-test-origin :converge-test-other-node} k))
-                          (is (instance? java.util.Date v)))
-                        (is (= #{:converge-test-origin :converge-test-other-node} (set (keys (.-vclock result)))))
-                        (is (= (.-data result) (set (keys (.-birth-dots result)))))
-                        (doseq [[element [node time]] (.-birth-dots result)]
-                          (is (#{:a :b :c} element))
-                          (is (#{:converge-test-origin :converge-test-other-node} node))
-                          (is (instance? java.util.Date time)))))))
+                       (conj :b))
+          other (node/with-node :converge-test-other-node
+                  (conj transfer :c))
+          result (proto/synchronize transfer other)]
+      (is (= result #{:a :b :c}))
+      (is (= #{:a :b :c} (.-data result)))
+      (doseq [[k v] (.-vclock result)]
+        (is (#{:converge-test-origin :converge-test-other-node} k))
+        (is (instance? #?(:clj java.util.Date
+                          :cljs js/Date) v)))
+      (is (= #{:converge-test-origin :converge-test-other-node} (set (keys (.-vclock result)))))
+      (is (= (.-data result) (set (keys (.-birth-dots result)))))
+      (doseq [[element [node time]] (.-birth-dots result)]
+        (is (#{:a :b :c} element))
+        (is (#{:converge-test-origin :converge-test-other-node} node))
+        (is (instance? #?(:clj java.util.Date
+                          :cljs js/Date) time)))))
   (testing "Disj on another node mirrored locally after converge."
     (node/initialize-node! :converge-test-origin)
-    (let [transfer (sset/new-set :a :b :c)]
-      (clock-ahead 1 #(let [other (node/with-node :converge-test-other-node
-                                    (disj transfer :c))
-                            result (proto/synchronize transfer other)]
-                        (is (= other #{:a :b}))
-                        (is (= result #{:a :b}))))))
+    (let [transfer (sset/new-set :a :b :c)
+          other (node/with-node :converge-test-other-node
+                  (disj transfer :c))
+          result (proto/synchronize transfer other)]
+      (is (= other #{:a :b}))
+      (is (= result #{:a :b}))))
   (testing "Concurrent converges will not resolve to a
   mutually-exclusive addition when vector clocks will support it."
     (node/initialize-node! :converge-test-origin)
     (let [transfer (-> (sset/new-set :a)
-                       (conj :b))]
-      (clock-ahead 1 (fn []
-                       (let [iterate (conj transfer :d)]
-                         (clock-ahead 1
-                                      (fn []
-                                        (let [other (node/with-node :converge-test-other-node
-                                                      (conj transfer :c))
-                                              result (proto/synchronize iterate other)]
-                                          (is (= result #{:a :b :c :d})))))))))))
+                       (conj :b))
+          iterate (conj transfer :d)
+          other (node/with-node :converge-test-other-node
+                  (conj transfer :c))
+          result (proto/synchronize iterate other)]
+      (is (= result #{:a :b :c :d})))))
 
 (deftest seqable-test
   (testing "Can turn an ORSWOT into a seq"

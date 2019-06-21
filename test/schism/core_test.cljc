@@ -1,5 +1,5 @@
 (ns schism.core-test
-  (:require [schism.core :as schism]
+  (:require [schism.core :as schism :include-macros true]
             #?(:clj [clojure.test :refer [deftest testing is]]
                :cljs [cljs.test :refer [deftest testing is]])
             [clojure.test.check.generators :as gen]
@@ -142,3 +142,29 @@
                  e collection-any]
                 (= (disj (apply schism/convergent-set s) e)
                    (disj (apply hash-set s) e))))
+
+(defn clock-ahead [n f]
+  #?(:clj (do (Thread/sleep n)
+              (f))
+     :cljs (js/setTimeout n f)))
+
+(defspec converge-after-ops-equivalent-for-sets
+  50
+  (prop/for-all [s (gen/set collection-any {:min-elements 3})
+                 ops (gen/let [operants (gen/list collection-any)
+                               operands (gen/vector (gen/elements [conj disj]) (count operants))]
+                       (map vector operands operants))]
+                (let [basis-cset (schism/with-node :start
+                                   (apply schism/convergent-set s))
+                      vanilla-result (reduce (fn [memo [f operant]]
+                                               (f memo operant))
+                                             s
+                                             ops)
+                      schism-result (schism/with-node :end
+                                      (reduce (fn [memo [f operant]]
+                                                (f memo operant))
+                                              basis-cset
+                                              ops))
+                      converge-result (schism/with-node :start
+                                        (schism/converge basis-cset schism-result))]
+                  (= vanilla-result schism-result converge-result))))

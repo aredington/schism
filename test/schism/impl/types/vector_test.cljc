@@ -7,12 +7,6 @@
             [schism.impl.protocols :as proto])
   #?(:clj (:import schism.impl.types.vector.ConvergentVector)))
 
-
-(defn clock-ahead [n f]
-  #?(:clj (do (Thread/sleep n)
-              (f))
-     :cljs (js/setTimeout n f)))
-
 (deftest basic-IPC-ops
   (testing "Equiv for vectors"
     (is (= (svector/new-vector) []))
@@ -39,20 +33,20 @@
     ;; Can only rely on millisecond time scales, so sleep 1 second
     ;; between ops so that there's some non-zero passage of time
     (let [transfer (-> (svector/new-vector true :a)
-                       (conj [:b 3]))]
-      (clock-ahead 1 #(let [other (node/with-node :converge-test-other-node
-                                    (conj transfer [:c :d]))
-                            result (proto/synchronize transfer other)]
-                        (is (= other [true :a [:b 3] [:c :d]]))
-                        (is (= result [true :a [:b 3] [:c :d]]))))))
+                       (conj [:b 3]))
+          other (node/with-node :converge-test-other-node
+                  (conj transfer [:c :d]))
+          result (proto/synchronize transfer other)]
+      (is (= other [true :a [:b 3] [:c :d]]))
+      (is (= result [true :a [:b 3] [:c :d]]))))
   (testing "Pop on another node mirrored locally after converge."
     (node/initialize-node! :converge-test-origin)
-    (let [transfer (svector/new-vector :a true :b 3 :c :d)]
-      (clock-ahead 1 #(let [other (node/with-node :converge-test-other-node
-                                    (pop transfer))
-                            result (proto/synchronize transfer other)]
-                        (is (= other [:a true :b 3 :c]))
-                        (is (= result [:a true :b 3 :c])))))))
+    (let [transfer (svector/new-vector :a true :b 3 :c :d)
+          other (node/with-node :converge-test-other-node
+                  (pop transfer))
+          result (proto/synchronize transfer other)]
+      (is (= other [:a true :b 3 :c]))
+      (is (= result [:a true :b 3 :c])))))
 
 (deftest seqable-test
   (testing "Can turn a CVECTOR into a seq"

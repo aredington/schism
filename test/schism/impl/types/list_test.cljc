@@ -8,11 +8,6 @@
   #?(:clj (:import schism.impl.types.list.ConvergentList)))
 
 
-(defn clock-ahead [n f]
-  #?(:clj (do (Thread/sleep n)
-              (f))
-     :cljs (js/setTimeout n f)))
-
 (deftest basic-IPC-ops
   (testing "Equiv for lists"
     (is (= (slist/new-list) '()))
@@ -37,19 +32,19 @@
     ;; Can only rely on millisecond time scales, so sleep 1 second
     ;; between ops so that there's some non-zero passage of time
     (let [transfer (-> (slist/new-list true :a)
-                       (conj [:b 3]))]
-      (clock-ahead 1 #(let [other (node/with-node :converge-test-other-node
-                                    (conj transfer [:c :d]))
-                            result (proto/synchronize transfer other)]
-                        (is (= result '([:c :d] [:b 3] true :a)))))))
+                       (conj [:b 3]))
+          other (node/with-node :converge-test-other-node
+                  (conj transfer [:c :d]))
+          result (proto/synchronize transfer other)]
+      (is (= result '([:c :d] [:b 3] true :a)))))
   (testing "Rest on another node mirrored locally after converge."
     (node/initialize-node! :converge-test-origin)
-    (let [transfer (slist/new-list :a true :b 3 :c :d)]
-      (clock-ahead 1 #(let [other (node/with-node :converge-test-other-node
-                                    (rest transfer))
-                            result (proto/synchronize transfer other)]
-                        (is (= other '(true :b 3 :c :d)))
-                        (is (= result '(true :b 3 :c :d))))))))
+    (let [transfer (slist/new-list :a true :b 3 :c :d)
+          other (node/with-node :converge-test-other-node
+                  (rest transfer))
+          result (proto/synchronize transfer other)]
+      (is (= other '(true :b 3 :c :d)))
+      (is (= result '(true :b 3 :c :d))))))
 
 (deftest seqable-test
   (testing "Can turn a CLIST into a seq"

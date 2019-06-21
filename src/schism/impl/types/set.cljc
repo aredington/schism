@@ -46,33 +46,33 @@
 
 #?(:clj (deftype Set [data vclock birth-dots]
           Counted
-          (count [this] (.count ^Counted (.data this)))
+          (count [this] (.count ^Counted (.-data this)))
 
           IPersistentCollection
           (cons [this o] (orswot-conj this o))
           (empty [this] (orswot-empty this))
           (equiv [this other]
-            (.equiv ^IPersistentCollection (.data this) other))
+            (.equiv ^IPersistentCollection (.-data this) other))
 
           IPersistentSet
           (disjoin [this o] (orswot-disj this o))
-          (contains [this o] (.contains ^IPersistentSet (.data this) o))
-          (get [this o] (.get ^IPersistentSet (.data this) o))
+          (contains [this o] (.contains ^IPersistentSet (.-data this) o))
+          (get [this o] (.get ^IPersistentSet (.-data this) o))
 
           Object
           (equals [this o]
-            (.equals (.data this) o))
+            (.equals (.-data this) o))
           (hashCode [this]
-            (.hashCode (.data this)))
+            (.hashCode (.-data this)))
           (toString [this]
             (.toString data))
 
           IHashEq
           (hasheq [this]
-            (.hasheq ^IHashEq (.data this)))
+            (.hasheq ^IHashEq (.-data this)))
 
           Seqable
-          (seq [this] (.seq ^Seqable (.data this)))
+          (seq [this] (.seq ^Seqable (.-data this)))
 
           java.util.Set
           (toArray [this] (.toArray (.-data this)))
@@ -84,22 +84,22 @@
           (clear [this] (throw (UnsupportedOperationException.)))
           (retainAll [this c] (throw (UnsupportedOperationException.)))
           (removeAll [this c] (throw (UnsupportedOperationException.)))
-          (containsAll [this c] (.containsAll ^java.util.Set (.data this) c))
-          (size [this] (.size ^java.util.Set (.data this)))
-          (isEmpty [this] (.isEmpty ^java.util.Set (.data this)))
-          (iterator [this] (.iterator ^java.util.Set (.data this)))
+          (containsAll [this c] (.containsAll ^java.util.Set (.-data this) c))
+          (size [this] (.size ^java.util.Set (.-data this)))
+          (isEmpty [this] (.isEmpty ^java.util.Set (.-data this)))
+          (iterator [this] (.iterator ^java.util.Set (.-data this)))
 
           IFn
           (invoke [this arg1]
-            (.invoke ^IFn (.data this) arg1))
+            (.invoke ^IFn (.-data this) arg1))
 
           IObj
           (withMeta [this meta]
-            (Set. (.withMeta ^IObj (.data this) meta) (.vclock this) (.birth-dots this)))
+            (Set. (.withMeta ^IObj (.-data this) meta) (.-vclock this) (.-birth-dots this)))
 
           IMeta
           (meta [this]
-            (.meta ^IMeta (.data this))))
+            (.meta ^IMeta (.-data this))))
    :cljs (deftype Set [data vclock birth-dots]
            ICounted
            (-count [this] (-count (.-data this)))
@@ -218,11 +218,11 @@
 #?(:clj (defmethod print-method Set
           [^Set s ^Writer writer]
           (.write writer "#schism/set [")
-          (.write writer (pr-str (.data s)))
+          (.write writer (pr-str (.-data s)))
           (.write writer ", ")
-          (.write writer (pr-str (.vclock s)))
+          (.write writer (pr-str (.-vclock s)))
           (.write writer ", ")
-          (.write writer (pr-str (.birth-dots s)))
+          (.write writer (pr-str (.-birth-dots s)))
           (.write writer "]")))
 
 (defn read-edn-set

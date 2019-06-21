@@ -32,12 +32,12 @@
 
 #?(:clj (deftype Map [data vclock birth-dots]
           Counted
-          (count [this] (.count ^Counted (.data this)))
+          (count [this] (.count ^Counted (.-data this)))
 
           IPersistentCollection
           (cons [this o] (ormwot-conj this o))
           (empty [this] (ormwot-empty this))
-          (equiv [this other] (.equiv ^IPersistentCollection (.data this) other))
+          (equiv [this other] (.equiv ^IPersistentCollection (.-data this) other))
 
           IPersistentMap
           (assoc [this k v] (ormwot-assoc this k v))
@@ -51,75 +51,75 @@
 
           Object
           (equals [this o]
-            (.equals (.data this) o))
+            (.equals (.-data this) o))
           (hashCode [this]
-            (.hashCode (.data this)))
+            (.hashCode (.-data this)))
           (toString [this]
-            (.toString (.data this)))
+            (.toString (.-data this)))
 
           ILookup
           (valAt [this k]
-            (.valAt ^ILookup (.data this) k))
+            (.valAt ^ILookup (.-data this) k))
           (valAt [this k not-found]
-            (.valAt ^ILookup (.data this) k not-found))
+            (.valAt ^ILookup (.-data this) k not-found))
 
           IMapIterable
           (keyIterator [this]
-            (.keyIterator ^IMapIterable (.data this)))
+            (.keyIterator ^IMapIterable (.-data this)))
           (valIterator [this]
-            (.valIterator ^IMapIterable (.data this)))
+            (.valIterator ^IMapIterable (.-data this)))
 
           IKVReduce
           (kvreduce [this f init]
-            (.kvreduce ^IKVReduce (.data this) f init))
+            (.kvreduce ^IKVReduce (.-data this) f init))
 
           IHashEq
           (hasheq [this]
-            (.hasheq ^IHashEq (.data this)))
+            (.hasheq ^IHashEq (.-data this)))
 
           Seqable
           (seq [this]
-            (.seq ^Seqable (.data this)))
+            (.seq ^Seqable (.-data this)))
 
           java.util.Map
-          (clear [this] (.clear ^java.util.Map (.data this)))
-          (compute [this k f] (.compute ^java.util.Map (.data this) k f))
-          (computeIfAbsent [this k f] (.computeIfAbsent ^java.util.Map (.data this) k f))
-          (computeIfPresent [this k f] (.computeIfPresent ^java.util.Map (.data this) k f))
-          (containsKey [this k] (.containsKey ^java.util.Map (.data this) k))
-          (containsValue [this v] (.containsValue ^java.util.Map (.data this) v))
-          (entrySet [this] (.entrySet ^java.util.Map (.data this)))
-          (get [this k] (.get ^java.util.Map (.data this) k))
-          (getOrDefault [this k not-found] (.getOrDefault ^java.util.Map (.data this) k not-found))
-          (isEmpty [this] (.isEmpty ^java.util.Map (.data this)))
-          (keySet [this] (.keySet ^java.util.Map (.data this)))
-          (merge [this k v f] (.merge ^java.util.Map (.data this) k v f))
-          (put [this k v] (.put ^java.util.Map (.data this) k v))
-          (putAll [this m] (.putAll ^java.util.Map (.data this) m))
-          (putIfAbsent [this k v] (.putIfAbsent ^java.util.Map (.data this) k v))
-          (remove [this k] (.remove ^java.util.Map (.data this) k))
-          (remove [this k v] (.remove ^java.util.Map (.data this) k v))
-          (replace [this k v] (.replace ^java.util.Map (.data this) k v))
-          (replace [this k ov nv] (.replace ^java.util.Map (.data this) k ov nv))
-          (replaceAll [this f] (.replaceAll ^java.util.Map (.data this) f))
-          (size [this] (.size ^java.util.Map (.data this)))
-          (values [this] (.values ^java.util.Map (.data this)))
+          (clear [this] (.clear ^java.util.Map (.-data this)))
+          (compute [this k f] (.compute ^java.util.Map (.-data this) k f))
+          (computeIfAbsent [this k f] (.computeIfAbsent ^java.util.Map (.-data this) k f))
+          (computeIfPresent [this k f] (.computeIfPresent ^java.util.Map (.-data this) k f))
+          (containsKey [this k] (.containsKey ^java.util.Map (.-data this) k))
+          (containsValue [this v] (.containsValue ^java.util.Map (.-data this) v))
+          (entrySet [this] (.entrySet ^java.util.Map (.-data this)))
+          (get [this k] (.get ^java.util.Map (.-data this) k))
+          (getOrDefault [this k not-found] (.getOrDefault ^java.util.Map (.-data this) k not-found))
+          (isEmpty [this] (.isEmpty ^java.util.Map (.-data this)))
+          (keySet [this] (.keySet ^java.util.Map (.-data this)))
+          (merge [this k v f] (.merge ^java.util.Map (.-data this) k v f))
+          (put [this k v] (.put ^java.util.Map (.-data this) k v))
+          (putAll [this m] (.putAll ^java.util.Map (.-data this) m))
+          (putIfAbsent [this k v] (.putIfAbsent ^java.util.Map (.-data this) k v))
+          (remove [this k] (.remove ^java.util.Map (.-data this) k))
+          (remove [this k v] (.remove ^java.util.Map (.-data this) k v))
+          (replace [this k v] (.replace ^java.util.Map (.-data this) k v))
+          (replace [this k ov nv] (.replace ^java.util.Map (.-data this) k ov nv))
+          (replaceAll [this f] (.replaceAll ^java.util.Map (.-data this) f))
+          (size [this] (.size ^java.util.Map (.-data this)))
+          (values [this] (.values ^java.util.Map (.-data this)))
 
           IFn
           (invoke [this k]
-            (.invoke ^IFn (.data this) k))
+            (.invoke ^IFn (.-data this) k))
           (invoke [this k not-found]
-            (.invoke ^IFn (.data this) k not-found))
+            (.invoke ^IFn (.-data this) k not-found))
 
           IObj
           (withMeta [this meta]
-            (Map. (with-meta ^IObj (.data this)
+            (Map. (with-meta ^IObj (.-data this)
                     meta)
-                  (.vclock this) (.birth-dots this)))
+                  (.-vclock this) (.-birth-dots this)))
 
           IMeta
           (meta [this]
-            (.meta ^IMeta (.data this))))
+            (.meta ^IMeta (.-data this))))
    :cljs (deftype Map [data vclock birth-dots]
            ICounted
            (-count [this] (-count (.-data this)))
@@ -222,7 +222,7 @@
 
 (defn- elemental-data
   [^Map m]
-  {:vector-clock (.vclock m)
+  {:vector-clock (.-vclock m)
    :elements (into []
                    (for [datum (.-data m)]
                      (let [dot (get (.-birth-dots m) (key datum))]
@@ -262,11 +262,11 @@
 #?(:clj (defmethod print-method Map
           [^Map m ^Writer writer]
           (.write writer "#schism/map [")
-          (.write writer (pr-str (.data m)))
+          (.write writer (pr-str (.-data m)))
           (.write writer ", ")
-          (.write writer (pr-str (.vclock m)))
+          (.write writer (pr-str (.-vclock m)))
           (.write writer ", ")
-          (.write writer (pr-str (.birth-dots m)))
+          (.write writer (pr-str (.-birth-dots m)))
           (.write writer "]")))
 
 (defn read-edn-map
