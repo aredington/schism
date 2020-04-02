@@ -6,13 +6,13 @@ modification and eventual consistency.
 
 ## Dependency Information
 
-Latest release: 0.1.0
+Latest release: 0.1.1
 
 [Leiningen](http://github.com/technomancy/leiningen/) and [Boot](http://boot-clj.com)
 dependency information:
 
 ```
-[com.holychao/schism "0.1.0"]
+[com.holychao/schism "0.1.1"]
 ```
 
 ## Motivation
@@ -113,6 +113,6 @@ stated in this document.
 
 ## License
 
-Copyright © 2018 Alex Redington
+Copyright © 2020 Alex Redington
 
 Distributed under the MIT License
