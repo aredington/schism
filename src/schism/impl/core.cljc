@@ -52,7 +52,7 @@
                                       (other-vclock-limiter %)) (:elements other-data))
         own-additions (remove #(and (> own-threshold (to-millis (:record-time %)))
                                     (own-vclock-limiter %)) (:elements own-data))]
-    (concat other-additions own-additions)))
+    (sort-by :record-time (concat other-additions own-additions))))
 
 (defn common-elements
   "Accepts maps of the form
