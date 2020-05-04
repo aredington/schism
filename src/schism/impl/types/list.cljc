@@ -195,8 +195,8 @@
                       (take-while (partial apply =))
                       reverse
                       (map first))
-          completed-elements (concat (apply ic/retain-elements
-                                            (ic/distinct-data own-data other-data))
+          completed-elements (concat (sort-by :record-time (apply ic/retain-elements
+                                                                  (ic/distinct-data own-data other-data)))
                                      retain)
           completed-data (->> completed-elements
                               (map :data)

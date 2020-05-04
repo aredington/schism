@@ -244,9 +244,10 @@
           other-data (elemental-data other)
           retain (filter (ic/common-elements own-data other-data)
                          (:elements own-data))
-          completed-elements (concat (apply ic/retain-elements
-                                            (ic/distinct-data own-data other-data))
-                                     retain)
+          completed-elements (->> (apply ic/retain-elements
+                                         (ic/distinct-data own-data other-data))
+                                  (concat retain)
+                                  (sort-by :record-time))
           completed-data (into {} (map :data completed-elements))
           completed-birth-dots (->> completed-elements
                                     (map (fn [{:keys [data author-node record-time]}]
