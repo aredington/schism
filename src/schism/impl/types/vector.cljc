@@ -245,19 +245,6 @@
                                       (.-vclock cvector)
                                       (assoc (.-insertions cvector) k [node/*current-node* k now]))))
 
-(defn assoc-n-with-tail-support
-  "Assoc with support to place `v` at the tail of `a` when `n` is -1."
-  [a n v]
-  (if (= n -1)
-    (conj a v)
-    (assoc a n v)))
-
-(def tail-insertion-sort-value
-  "The value to use when sorting insertions by index, and the recorded
-  index was -1, indicating the element was inserted at the tail."
-  #?(:clj Long/MAX_VALUE
-     :cljs (.-MAX_SAFE_INTEGER js/Number)))
-
 (defn- elemental-data
   [^ConvergentVector v]
   {:vector-clock (.-vclock v)
@@ -289,7 +276,7 @@
                                   (sort-by (fn [{:keys [author-node data record-time]}]
                                              (let [{:keys [insert-index]} data]
                                                [(if (= -1 insert-index)
-                                                  tail-insertion-sort-value
+                                                  ic/tail-insertion-sort-value
                                                   insert-index) record-time]))))
           ;; Given the potential for insertion at arbitrary indexes,
           ;; trying to find a common contiguous chunk is less fruitful
@@ -304,13 +291,13 @@
           ;; find the common insertions.
           completed-data (reduce (fn [m element]
                                    (let [{:keys [element insert-index]} (:data element)]
-                                     (assoc-n-with-tail-support m insert-index element)))
+                                     (ic/assoc-n-with-tail-support m insert-index element)))
                                  []
                                  completed-elements)
           completed-insertions (reduce (fn [m {:keys [author-node record-time]
                                                {:keys [insert-index]} :data}]
-                                         (assoc-n-with-tail-support m insert-index
-                                                                    [author-node insert-index record-time]))
+                                         (ic/assoc-n-with-tail-support m insert-index
+                                                                       [author-node insert-index record-time]))
                                        []
                                        completed-elements)
           completed-vclock (ic/merged-clock completed-elements own-data other-data)]

@@ -45,7 +45,7 @@
                           :cljs js/Date) v)))
       (is (= #{:converge-test-origin :converge-test-other-node} (set (keys (.-vclock result)))))
       (is (= (set (keys (.-data result))) (set (keys (.-birth-dots result)))))
-      (doseq [[key [node time]] (.-birth-dots result)]
+      (doseq [[key {node :a time :t} :as entry] (.-birth-dots result)]
         (is (#{:a :b :c} key))
         (is (#{:converge-test-origin :converge-test-other-node} node))
         (is (instance? #?(:clj java.util.Date
@@ -57,7 +57,9 @@
                   (dissoc transfer :c))
           result (proto/synchronize transfer other)]
       (is (= other {:a true :b 3}))
-      (is (= result {:a true :b 3})))))
+      (is (= result {:a true :b 3}))
+      (is (= (contains? (.-birth-dots other) :c) false))
+      (is (= (contains? (.-birth-dots result) :c) false)))))
 
 (deftest seqable-test
   (testing "Can turn an ORMWOT into a seq"
@@ -116,3 +118,23 @@
                      :b {:c true
                          :d {:e 4
                              :f "hog"}}})))))
+
+(deftest vector-conjs-compose
+  (testing "Two conjs on different nodes yield both their conjs on convergence and do not overwrite"
+    (node/initialize-node! :vector-conjs-origins)
+    (let [original (-> (nmap/new-map :a [1])
+                       (#(node/with-node :derivation-node-a
+                           (assoc-in % [:b] [2]))))
+          derivation-a (node/with-node :derivation-node-a
+                         (update-in original [:a] conj 2))
+          derivation-b (node/with-node :derivation-node-b
+                         (update-in original [:a] conj 3))
+          result (proto/synchronize derivation-b derivation-a)]
+      (is (= original {:a [1]
+                       :b [2]}))
+      (is (= derivation-a {:a [1 2]
+                           :b [2]}))
+      (is (= derivation-b {:a [1 3]
+                           :b [2]}))
+      (is (= result {:a [1 2 3]
+                     :b [2]})))))

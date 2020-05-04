@@ -1,5 +1,7 @@
 (ns schism.impl.types.nesting-util
-  "Utility functions for supporting nested collections.")
+  "Utility functions for supporting nested collections."
+  (:require [clojure.data :refer [diff]]
+            [schism.impl.core :as ic]))
 
 (defn flat
   "Flattens a structure of associatives and sequentials to an
@@ -33,12 +35,13 @@
 
 (defn- assoc*
   [m [type key] v]
-  (assoc (if m
-           m
-           (cond
-             (= type 'a) {}
-             (= type 's) []))
-         key v))
+  (ic/assoc-n-with-tail-support
+   (if m
+     m
+     (cond
+       (= type 'a) {}
+       (= type 's) []))
+   key v))
 
 (defn- assoc-in*
   [m [[type key :as kspec] & kspecs] v]
@@ -50,8 +53,48 @@
   "Constitutes a structure as produced by `flat` up into a nested
   collection of maps and vectors. As all sequential items are coerced
   to vectors, this is not reflexive of `flat`."
-  [m]
-  (reduce (fn [m [k v]]
-            (assoc-in* m k v))
-          nil
-          m))
+  ([vals] (project vals nil))
+  ([vals basis]
+   (reduce (fn [m [k v]]
+             (assoc-in* m k v))
+           basis
+           vals)))
+
+(defn clean*
+  "Remove the key at k and any empty parents above it."
+  [m [k & ks]]
+  (if ks
+    (let [cleaned (clean* (get m k) ks)]
+      (if (empty? cleaned)
+        (cond (vector? m) (pop m)
+              (map? m) (dissoc m k))
+        (assoc m k cleaned)))
+    (cond (vector? m) (pop m)
+          (map? m) (dissoc m k))))
+
+(defn nested-update
+  "Does all of the book-keeping for nested map/vector combo data types.
+  `original` is the original data structure, `provenance` is the
+  original structure's provenance data, `update` is a update function
+  to progress original.
+  Returns positionally: the updated `original`, and, the updated `provenance`."
+  [original provenance update author timestamp]
+  (let [updated (update original)
+        original-vals-flat (flat original)
+        update-vals-flat (flat updated)
+        [deletions additions common] (diff original-vals-flat update-vals-flat)
+        provenance (reduce (fn [m [k v]]
+                             (if (contains? additions k)
+                               m
+                               (clean* m (access-path k))))
+                           provenance
+                           deletions)
+        addition-dots (for [[k v] additions]
+                        (let [to-vector? (= 's (first (last k)))
+                              distinct? (not (contains? deletions k))
+                              basis {:a author
+                                     :t timestamp}]
+                          [k (if to-vector?
+                               (merge basis {:i (if distinct? -1 (last (last k)))})
+                               basis)]))]
+    [updated (project addition-dots provenance)]))

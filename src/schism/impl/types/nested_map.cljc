@@ -188,17 +188,14 @@
 (defn nested-map-conj
   [^NestedMap nm pair]
   (vc/update-clock now nm
-    (let [updated (conj (.-data nm) pair)
-          original-vals-flat (nu/flat (.-data nm))
-          update-vals-flat (nu/flat updated)
-          [_ updates-flat _] (diff original-vals-flat update-vals-flat)
-          updated-dots (reduce (fn [m [k v]]
-                                 (assoc-in m (map #(nth % 1) k) [node/*current-node* now]))
-                               (.-birth-dots nm)
-                               updates-flat)]
-      (NestedMap. updated
-                  (.-vclock nm)
-                  updated-dots))))
+                   (let [[updated updated-dots] (nu/nested-update (.-data nm)
+                                                                  (.-birth-dots nm)
+                                                                  #(conj % pair)
+                                                                  node/*current-node*
+                                                                  now)]
+                     (NestedMap. updated
+                                 (.-vclock nm)
+                                 updated-dots))))
 
 (defn nested-map-empty
   [^NestedMap nm]
@@ -210,33 +207,26 @@
 (defn nested-map-assoc
   [^NestedMap nm k v]
   (vc/update-clock now nm
-    (let [updated (assoc (.-data nm) k v)
-          original-vals-flat (nu/flat (.-data nm))
-          update-vals-flat (nu/flat updated)
-          [_ updates-flat _] (diff original-vals-flat update-vals-flat)
-          updated-dots (reduce (fn [m [k v]]
-                                 (assoc-in m (map #(nth % 1) k) [node/*current-node* now]))
-                               (.-birth-dots nm)
-                               updates-flat)]
-      (NestedMap. updated
-                  (.-vclock nm)
-                  updated-dots))))
+                   (let [[updated updated-dots] (nu/nested-update (.-data nm)
+                                                                  (.-birth-dots nm)
+                                                                  #(assoc % k v)
+                                                                  node/*current-node*
+                                                                  now)]
+                     (NestedMap. updated
+                                 (.-vclock nm)
+                                 updated-dots))))
 
 (defn nested-map-dissoc
   [^NestedMap nm k]
   (vc/update-clock now nm
-    (let [updated (dissoc (.-data nm) k)
-          original-dots-flat (nu/flat (.-birth-dots nm))
-          original-vals-flat (nu/flat (.-data nm))
-          update-vals-flat (nu/flat updated)
-          [deletions _ _] (diff original-vals-flat update-vals-flat)
-          updated-dots-flat (reduce (fn [m [k v]]
-                                      (dissoc m k))
-                                    original-dots-flat
-                                    deletions)]
-   (NestedMap. updated
-               (.-vclock nm)
-               (nu/project updated-dots-flat)))))
+                   (let [[updated updated-dots] (nu/nested-update (.-data nm)
+                                                                  (.-birth-dots nm)
+                                                                  #(dissoc % k)
+                                                                  node/*current-node*
+                                                                  now)]
+                     (NestedMap. updated
+                                 (.-vclock nm)
+                                 updated-dots))))
 
 (defn- elemental-data
   [^NestedMap nm]
@@ -246,9 +236,18 @@
      :elements (into []
                      (for [datum flat-data]
                        (let [dot (get-in (.-birth-dots nm) (nu/access-path (key datum)))]
-                         {:data datum
-                          :author-node (first dot)
-                          :record-time (last dot)})))}))
+                         {:data {:entry datum
+                                 :insert-index (:i dot)}
+                          :author-node (:a dot)
+                          :record-time (:t dot)})))}))
+
+(defn finalize-projection-key
+  [m]
+  (let [{:keys [entry insert-index]} (:data m)]
+    (if insert-index
+      (assoc-in m [:data :entry]
+                [(conj (pop (key entry)) ['s insert-index]) (val entry)])
+      m)))
 
 (extend-type NestedMap
   proto/Vclocked
@@ -263,14 +262,19 @@
           other-data (elemental-data other)
           retain (filter (ic/common-elements own-data other-data)
                          (:elements own-data))
-          completed-elements (concat (apply ic/retain-elements
-                                            (ic/distinct-data own-data other-data))
-                                     retain)
-          completed-flat-data (into {} (map :data completed-elements))
-          completed-flat-birth-dots (->> completed-elements
-                                    (map (fn [{:keys [data author-node record-time]}]
-                                           [(key data) [author-node record-time]]))
-                                    (into {}))
+          completed-elements (->> (apply ic/retain-elements
+                                         (ic/distinct-data own-data other-data))
+                                  (concat retain)
+                                  (sort-by :record-time)
+                                  (map finalize-projection-key))
+          completed-flat-data (map (comp :entry :data) completed-elements)
+          completed-flat-birth-dots (map (fn [{:keys [author-node record-time]
+                                               {:keys [insert-index entry] :as data} :data}]
+                                           (let [dot {:a author-node :t record-time}]
+                                             [(first entry) (if insert-index
+                                                              (assoc dot :i insert-index)
+                                                              dot)]))
+                                         completed-elements)
           completed-vclock (ic/merged-clock completed-elements own-data other-data)]
       (vc/update-clock _ this
                        (NestedMap. (with-meta (nu/project completed-flat-data)
@@ -303,7 +307,8 @@
               (let [init (apply hash-map args)
                     init-dots (->> init
                                    nu/flat
-                                   (map (fn [[k v]] [k [node/*current-node* now]]))
+                                   (map (fn [[k v]] [k {:a node/*current-node*
+                                                        :t now}]))
                                    (into {})
                                    nu/project)]
                 (NestedMap. init

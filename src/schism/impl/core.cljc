@@ -52,7 +52,7 @@
                                       (other-vclock-limiter %)) (:elements other-data))
         own-additions (remove #(and (> own-threshold (to-millis (:record-time %)))
                                     (own-vclock-limiter %)) (:elements own-data))]
-    (sort-by :record-time (concat other-additions own-additions))))
+    (concat other-additions own-additions)))
 
 (defn common-elements
   "Accepts maps of the form
@@ -95,3 +95,16 @@
   (let [relevant-nodes (set (map :author-node elements))]
     (-> (apply merge-with (partial max-key to-millis) (map :vector-clock datasets))
         (select-keys relevant-nodes))))
+
+(def tail-insertion-sort-value
+  "The value to use when sorting insertions by index, and the recorded
+  index was -1, indicating the element was inserted at the tail."
+  #?(:clj Long/MAX_VALUE
+     :cljs (.-MAX_SAFE_INTEGER js/Number)))
+
+(defn assoc-n-with-tail-support
+  "Assoc with support to place `v` at the tail of `a` when `n` is -1."
+  [a n v]
+  (if (= n -1)
+    (conj a v)
+    (assoc a n v)))
