@@ -241,14 +241,6 @@
                           :author-node (:a dot)
                           :record-time (:t dot)})))}))
 
-(defn finalize-projection-key
-  [m]
-  (let [{:keys [entry insert-index]} (:data m)]
-    (if insert-index
-      (assoc-in m [:data :entry]
-                [(conj (pop (key entry)) ['s insert-index]) (val entry)])
-      m)))
-
 (extend-type NestedMap
   proto/Vclocked
   (get-clock [this] (.-vclock this))
@@ -266,7 +258,7 @@
                                          (ic/distinct-data own-data other-data))
                                   (concat retain)
                                   (sort-by :record-time)
-                                  (map finalize-projection-key))
+                                  (map nu/finalize-projection-key))
           completed-flat-data (map (comp :entry :data) completed-elements)
           completed-flat-birth-dots (map (fn [{:keys [author-node record-time]
                                                {:keys [insert-index entry] :as data} :data}]

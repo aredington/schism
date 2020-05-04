@@ -98,3 +98,11 @@
                                (merge basis {:i (if distinct? -1 (last (last k)))})
                                basis)]))]
     [updated (project addition-dots provenance)]))
+
+(defn finalize-projection-key
+  [m]
+  (let [{:keys [entry insert-index]} (:data m)]
+    (if insert-index
+      (assoc-in m [:data :entry]
+                [(conj (pop (key entry)) ['s insert-index]) (val entry)])
+      m)))

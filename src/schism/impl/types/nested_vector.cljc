@@ -1,15 +1,20 @@
-(ns schism.impl.types.vector
-  "Definition and support for Schism's Convergent vector type. The
-  convergent vector is a timestamped log of entries with a vector
-  clock & insertion index. Convergence places entries into the
+(ns schism.impl.types.nested-vector
+  "Definition and support for Schism's Deeply Convergent Vector
+  type. The convergent vector is a timestamped log of entries with a
+  vector clock & insertion index. Convergence places entries into the
   resultant vector in insertion order, with insertions occurring by
   replaying insertions operations in order. The vector clock conveys
-  that an item has been removed from the vector on another node."
-  (:require [schism.impl.protocols :as proto]
+  that an item has been removed from the vector on another node. This
+  variant provides rich support for serialization and convergence of
+  deeply nested structures, at the cost that all modification
+  operations take linear time instead of constant or log time."
+  (:require [schism.impl.types.nesting-util :as nu]
+            [schism.impl.protocols :as proto]
             [schism.impl.vector-clock :as vc]
             [schism.impl.core :as ic]
             [schism.node :as node]
             [clojure.set :as set]
+            [clojure.data :refer [diff]]
             #?(:cljs [cljs.reader :as reader]))
   #?(:cljs (:require-macros [schism.impl.vector-clock :as vc]))
   #?(:clj (:import (clojure.lang IPersistentCollection IPersistentStack IPersistentVector Reversible IReduce IKVReduce Indexed Associative Counted IHashEq Seqable IObj IMeta IFn ILookup)
@@ -17,25 +22,15 @@
                    (java.util Date Collection)
                    (java.lang Object Long))))
 
-;; A CLJ & CLJS implementation of a convergent vector
+(declare nested-vector-conj nested-vector-pop nested-vector-empty nested-vector-assoc)
 
-;; Each vector maintains its own vector clock, and insertion times and
-;; positions for each element of the vector. Vector entries and
-;; insertions are correlated positionally (as the vector may contain
-;; the same item multiple times.) Insertion times and indices dictate
-;; ordering; elements inserted at the tail of the vector are recorded
-;; as being inserted with index -1. The vector clock determines if an
-;; entry has been removed.
-
-(declare cvector-conj cvector-pop cvector-empty cvector-assoc)
-
-#?(:clj (deftype ConvergentVector [data vclock insertions]
+#?(:clj (deftype NestedVector [data vclock insertions]
           Counted
           (count [this] (.count ^Counted (.-data this)))
 
           IPersistentCollection
-          (cons [this o] (cvector-conj this o))
-          (empty [this] (cvector-empty this))
+          (cons [this o] (nested-vector-conj this o))
+          (empty [this] (nested-vector-empty this))
           (equiv [this other] (.equiv ^IPersistentCollection (.-data this) other))
 
           Object
@@ -84,7 +79,7 @@
 
           IObj
           (withMeta [this meta]
-            (ConvergentVector. (with-meta ^IObj (.-data this)
+            (NestedVector. (with-meta ^IObj (.-data this)
                                  meta)
                                (.-vclock this)
                                (.-insertions this)))
@@ -104,11 +99,11 @@
           IPersistentStack
           (peek [this] (.peek ^IPersistentStack (.-data this)))
           (pop [this]
-            (cvector-pop this))
+            (nested-vector-pop this))
 
           IPersistentVector
           (assocN [this i v]
-            (cvector-assoc this i v))
+            (nested-vector-assoc this i v))
 
           ILookup
           (valAt [this k]
@@ -122,7 +117,7 @@
           (entryAt [this k]
             (.entryAt ^Associative (.-data this) k))
           (assoc [this k v]
-            (cvector-assoc this k v))
+            (nested-vector-assoc this k v))
 
           Indexed
           (nth [this i]
@@ -135,15 +130,15 @@
             (.invoke ^IFn (.-data this) k))
           (invoke [this k not-found]
             (.invoke ^IFn (.-data this) k not-found)))
-   :cljs (deftype ConvergentVector [data vclock insertions]
+   :cljs (deftype NestedVector [data vclock insertions]
            ICounted
            (-count [this] (-count (.-data this)))
 
            IEmptyableCollection
-           (-empty [this] (cvector-empty this))
+           (-empty [this] (nested-vector-empty this))
 
            ICollection
-           (-conj [this o] (cvector-conj this o))
+           (-conj [this o] (nested-vector-conj this o))
 
            IEquiv
            (-equiv [this other]
@@ -151,7 +146,7 @@
 
            IPrintWithWriter
            (-pr-writer [o writer opts]
-             (-write writer "#schism/vector [")
+             (-write writer "#schism/nested-vector [")
              (-write writer (pr-str (.-data o)))
              (-write writer ", ")
              (-write writer (pr-str (.-vclock o)))
@@ -174,16 +169,16 @@
 
            IWithMeta
            (-with-meta [this meta]
-             (ConvergentVector. (-with-meta (.-data this)
+             (NestedVector. (-with-meta (.-data this)
                                             meta)
                                 (.-vclock this)
                                 (.-insertions this)))
 
            IFn
            (-invoke [this k]
-             (-invoke (.-data this) k))
+             ((.-data this) k))
            (-invoke [this k not-found]
-             (-invoke (.-data this) k not-found))
+             ((.-data this) k not-found))
 
            IIndexed
            (-nth [this n]
@@ -201,7 +196,7 @@
            (-contains-key? [this k]
              (-contains-key? (.-data this) k))
            (-assoc [this k v]
-             (cvector-assoc this k v))
+             (nested-vector-assoc this k v))
 
            IFind
            (-find [this k]
@@ -211,11 +206,11 @@
            (-peek [this]
              (-peek (.-data this)))
            (-pop [this]
-             (cvector-pop this))
+             (nested-vector-pop this))
 
            IVector
            (-assoc-n [this n v]
-             (cvector-assoc this n v))
+             (nested-vector-assoc this n v))
 
            IReduce
            (-reduce [this f]
@@ -227,94 +222,88 @@
            (-kv-reduce [this f init]
              (-kv-reduce (.-data this) f init))))
 
-(defn cvector-conj [^ConvergentVector cvector o]
-  (vc/update-clock now cvector
-                   (ConvergentVector. (conj (.-data cvector) o)
-                                      (.-vclock cvector)
-                                      (conj (.-insertions cvector) [node/*current-node* -1 now]))))
+(defn nested-vector-conj [^NestedVector nvector o]
+  (vc/update-clock now nvector
+                   (let [[updated updated-dots] (nu/nested-update (.-data nvector)
+                                                                  (.-insertions nvector)
+                                                                  #(conj % o)
+                                                                  node/*current-node*
+                                                                  now)]
+                     (NestedVector. updated
+                                    (.-vclock nvector)
+                                    updated-dots))))
 
-(defn cvector-empty [^ConvergentVector cvector]
-  (vc/update-clock _ cvector
-                   (ConvergentVector. (vector)
-                                      (hash-map)
-                                      (vector))))
+(defn nested-vector-empty [^NestedVector nvector]
+  (vc/update-clock _ nvector
+                   (NestedVector. (vector)
+                                  (hash-map)
+                                  (vector))))
 
-(defn cvector-pop [^ConvergentVector cvector]
-  (vc/update-clock _ cvector
-                   (ConvergentVector. (pop (.-data cvector))
-                                      (.-vclock cvector)
-                                      (pop (.-insertions cvector)))))
+(defn nested-vector-pop [^NestedVector nvector]
+  (vc/update-clock _ nvector
+                   (NestedVector. (pop (.-data nvector))
+                                  (.-vclock nvector)
+                                  (pop (.-insertions nvector)))))
 
-(defn cvector-assoc [^ConvergentVector cvector k v]
-  (vc/update-clock now cvector
-                   (ConvergentVector. (assoc (.-data cvector) k v)
-                                      (.-vclock cvector)
-                                      (assoc (.-insertions cvector) k [node/*current-node* k now]))))
+(defn nested-vector-assoc [^NestedVector nvector k v]
+  (vc/update-clock now nvector
+                   (let [[updated updated-dots] (nu/nested-update (.-data nvector)
+                                                                  (.-insertions nvector)
+                                                                  #(assoc % k v)
+                                                                  node/*current-node*
+                                                                  now)]
+                    (NestedVector. updated
+                                   (.-vclock nvector)
+                                   updated-dots))))
 
 (defn- elemental-data
-  [^ConvergentVector v]
-  {:vector-clock (.-vclock v)
-   :elements (into []
-                   (for [[element [author-node insert-index record-time]]
-                         (map vector (.-data v) (.-insertions v))]
-                     {:data {:element element
-                             :insert-index insert-index}
-                      :author-node author-node
-                      :record-time record-time}))})
+  [^NestedVector v]
+  (let [flat-data (nu/flat (.-data v))]
+    {:vector-clock (.-vclock v)
+     :elements (into []
+                     (for [datum flat-data]
+                       (let [dot (get-in (.-insertions v) (nu/access-path (key datum)))]
+                        {:data {:entry datum
+                                :insert-index (:i dot)}
+                         :author-node (:a dot)
+                         :record-time (:t dot)})))}))
 
-(extend-type ConvergentVector
+(extend-type NestedVector
   proto/Vclocked
   (get-clock [this] (.-vclock this))
-  (with-clock [this new-clock] (ConvergentVector. (.-data this)
+  (with-clock [this new-clock] (NestedVector. (.-data this)
                                                   new-clock
                                                   (.-insertions this)))
 
   proto/Convergent
-  (synchronize [this ^ConvergentVector other]
+  (synchronize [this ^NestedVector other]
     (let [own-meta (-> this .-data meta)
           own-data (elemental-data this)
           other-data (elemental-data other)
           retain (filter (ic/common-elements own-data other-data)
                          (:elements own-data))
-          completed-elements (->> retain
-                                  (concat (apply ic/retain-elements
-                                                 (ic/distinct-data own-data other-data)))
-                                  (sort-by (fn [{:keys [author-node data record-time]}]
-                                             (let [{:keys [insert-index]} data]
-                                               [(if (= -1 insert-index)
-                                                  ic/tail-insertion-sort-value
-                                                  insert-index) record-time]))))
-          ;; Given the potential for insertion at arbitrary indexes,
-          ;; trying to find a common contiguous chunk is less fruitful
-          ;; than taking our [element, node, index, timestamp] tuples
-          ;; and treating them as discrete insertion
-          ;; instructions. Removal is still indicated by vector clock,
-          ;; AND it is reasonable to expect much of the vector to be
-          ;; shared, so it's important to get to the right set of such
-          ;; instructions. As time and index dictate the overall state
-          ;; of convergence, it is not important to preserve ordering
-          ;; through convergence, which affords using set logic to
-          ;; find the common insertions.
-          completed-data (reduce (fn [m element]
-                                   (let [{:keys [element insert-index]} (:data element)]
-                                     (ic/assoc-n-with-tail-support m insert-index element)))
-                                 []
-                                 completed-elements)
-          completed-insertions (reduce (fn [m {:keys [author-node record-time]
-                                               {:keys [insert-index]} :data}]
-                                         (ic/assoc-n-with-tail-support m insert-index
-                                                                       [author-node insert-index record-time]))
-                                       []
+          completed-elements (->> (apply ic/retain-elements
+                                         (ic/distinct-data own-data other-data))
+                                  (concat retain)
+                                  (sort-by :record-time)
+                                  (map nu/finalize-projection-key))
+          completed-flat-data (map (comp :entry :data) completed-elements)
+          completed-flat-insertions (map (fn [{:keys [author-node record-time]
+                                          {:keys [insert-index entry] :as data} :data}]
+                                      (let [dot {:a author-node :t record-time}]
+                                        [(first entry) (if insert-index
+                                                         (assoc dot :i insert-index)
+                                                         dot)]))
                                        completed-elements)
           completed-vclock (ic/merged-clock completed-elements own-data other-data)]
       (vc/update-clock _ this
-                       (ConvergentVector. (with-meta completed-data own-meta)
-                                          completed-vclock
-                                          completed-insertions)))))
+                       (NestedVector. (with-meta (nu/project completed-flat-data) own-meta)
+                                      completed-vclock
+                                      (nu/project completed-flat-insertions))))))
 
-#?(:clj (defmethod print-method ConvergentVector
-          [^ConvergentVector v ^Writer writer]
-          (.write writer "#schism/vector [")
+#?(:clj (defmethod print-method NestedVector
+          [^NestedVector v ^Writer writer]
+          (.write writer "#schism/nested-vector [")
           (.write writer (pr-str (.-data v)))
           (.write writer ", ")
           (.write writer (pr-str (.-vclock v)))
@@ -325,16 +314,20 @@
 (defn read-edn-vector
   [read-object]
   (let [[data vclock insertions] read-object]
-    (ConvergentVector. data vclock insertions)))
+    (NestedVector. data vclock insertions)))
 
-#?(:cljs (cljs.reader/register-tag-parser! 'schism/vector read-edn-vector))
+#?(:cljs (cljs.reader/register-tag-parser! 'schism/nested-vector read-edn-vector))
 
 (defn new-vector
-  ([] (ConvergentVector. (vector)
-                         (hash-map)
-                         (vector)))
+  ([] (NestedVector. (vector)
+                     (hash-map)
+                     (vector)))
   ([& args] (vc/update-clock now nil
-                             (ConvergentVector. (apply vector args)
-                                                (hash-map)
-                                                (apply vector (for [i (range (count args))]
-                                                                [node/*current-node* i now]))))))
+                             (let [[updated updated-dots] (nu/nested-update []
+                                                                  []
+                                                                  #(into % args)
+                                                                  node/*current-node*
+                                                                  now)]
+                               (NestedVector. updated
+                                              (hash-map)
+                                              updated-dots)))))
