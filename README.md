@@ -6,13 +6,13 @@ modification and eventual consistency.
 
 ## Dependency Information
 
-Latest release: 0.1.1
+Latest release: 0.1.2
 
 [Leiningen](http://github.com/technomancy/leiningen/) and [Boot](http://boot-clj.com)
 dependency information:
 
 ```
-[com.holychao/schism "0.1.1"]
+[com.holychao/schism "0.1.2"]
 ```
 
 ## Motivation
@@ -95,9 +95,40 @@ identifiers, schism's convergence behavior is undefined. (Don't do
 this). If you do not explicitly invoke `initialize-node!`, it is left
 at the value `nil`.
 
+## Nested collections
+
+It is common to build up a tree of maps and vectors to create several
+addressable values that cohere to a common whole. If one built this
+collection up out of individual schism collections, a number of
+problems with convergence and serialization would present
+themselves. I have provided `schism.core/nested-map` and
+`schism.core/nested-vector` to address both these problems. While
+these provide best-least-surprise convergence, it's important to
+understand the limitations and leverages of best:
+
+- These collections incur substantially more CPU time to conduct
+  simple operations as a isomorphic mirror of all modifications must
+  be computed on each update.
+- While adding empty collections should work, please avoid doing so.
+- `clojure.core/assoc-in`, `clojure.core/update-in`, and friends
+  should work with the convergent map without any special handling.
+- Vectors containing leaf nodes will compose tail insertions, so two
+  nodes adding to the tail with `conj` will have both of their
+  additions retained in chronological order.
+- Vectors at intermediate nodes will treat the child at the index as
+  identity.
+- Collections must be isomorphic to converge: Do not allow one node to
+  place a vector and another node to place a map at the same path in
+  the tree.
+
+Given the additional complications I strongly encourage clients to
+pursue a strategy of retaining a shallow convergent-vector of entity
+ids and one convergent-map for each entity. For those cases where this
+combo is not sufficient, please wield `nested-map` and `nested-vector`
+with care.
+
 ## Further work
 
-- Property based tests
 - Configurable convergence
 - Other good ideas as the community provides them
 
