@@ -296,13 +296,11 @@
                   (hash-map)
                   (hash-map)))
   ([& args] (vc/update-clock now nil
-              (let [init (apply hash-map args)
-                    init-dots (->> init
-                                   nu/flat
-                                   (map (fn [[k v]] [k {:a node/*current-node*
-                                                        :t now}]))
-                                   (into {})
-                                   nu/project)]
-                (NestedMap. init
-                            (hash-map)
-                            init-dots)))))
+                             (let [[updated updated-dots] (nu/nested-update {}
+                                                                            {}
+                                                                            (fn [_] (apply hash-map args))
+                                                                            node/*current-node*
+                                                                            now)]
+                               (NestedMap. updated
+                                           (hash-map)
+                                           updated-dots)))))

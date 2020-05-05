@@ -3,6 +3,20 @@
   (:require [clojure.data :refer [diff]]
             [schism.impl.core :as ic]))
 
+
+(defn compare-paths
+  [[[a-type a-val :as first-a] & rest-a :as a] [[b-type b-val :as first-b] & rest-b :as b]]
+  (cond
+    (and (nil? a) (nil? b)) 0
+    (nil? a) -1
+    (nil? b) 1
+    (= first-a first-b) (recur rest-a rest-b)
+    (and (= a-type 's) (= b-type 'a)) -1
+    (and (= b-type 's) (= a-type 'a)) 1
+    (and (= a-type 's) (= b-type 's)) (compare a-val b-val)
+    (or rest-a rest-b) (recur rest-a rest-b)
+    :else (compare (hash a-val) (hash b-val))))
+
 (defn flat
   "Flattens a structure of associatives and sequentials to an
   associative of paths to leaf values. Each step in a path will retain
@@ -10,7 +24,8 @@
   associatives. Vectors, lists, and other seqs will be flattened to
   sequentials."
   [c]
-  (if-not (coll? c)
+  (if (or (not (coll? c))
+          (empty? c))
     c
     (let [marker (if (map? c) 'a 's)
           m (if (map? c)
@@ -19,10 +34,11 @@
       (into {}
             (mapcat (fn [[k v]]
                       (let [child-flat (flat v)]
-                        (if (coll? child-flat)
+                        (if (or (not (coll? child-flat))
+                                (empty? child-flat))
+                          [[[[marker k]] child-flat]]
                           (for [[path element] child-flat]
-                            [(apply vector [marker k] path) element])
-                          [[[[marker k]] child-flat]]))))
+                            [(apply vector [marker k] path) element])))))
             m))))
 
 (defn access-path
@@ -35,13 +51,15 @@
 
 (defn- assoc*
   [m [type key] v]
-  (ic/assoc-n-with-tail-support
-   (if m
-     m
-     (cond
-       (= type 'a) {}
-       (= type 's) []))
-   key v))
+  (let [m (if m
+            m
+            (cond
+              (= type 'a) {}
+              (= type 's) []))
+        assoc-fn (if (vector? m)
+                   ic/assoc-n-with-tail-support
+                   assoc)]
+    (assoc-fn m key v)))
 
 (defn- assoc-in*
   [m [[type key :as kspec] & kspecs] v]
@@ -89,7 +107,7 @@
                                (clean* m (access-path k))))
                            provenance
                            deletions)
-        addition-dots (for [[k v] additions]
+        addition-dots (for [[k v] (sort-by first compare-paths additions)]
                         (let [to-vector? (= 's (first (last k)))
                               distinct? (not (contains? deletions k))
                               basis {:a author

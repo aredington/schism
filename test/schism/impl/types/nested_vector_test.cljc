@@ -126,3 +126,13 @@
       (is (= derivation-a [:a [1 2] [2]]))
       (is (= derivation-b [:a [1 3] [2]]))
       (is (= result [:a [1 2 3] [2]])))))
+
+(deftest interesting-vector-inits
+  (testing "Empty vector stacked 2 deep"
+    (node/initialize-node! :interesting-vector-inits)
+    (let [v (nvector/new-vector [[]])]
+      (is (= [[[]]] (.-data v)))
+      (is (= :interesting-vector-inits (get-in (.-insertions v) [0 0 :a])))
+      (is (= -1 (get-in (.-insertions v) [0 0 :i])))
+      (is (instance? #?(:clj java.util.Date
+                        :cljs js/Date) (get-in (.-insertions v) [0 0 :t]))))))

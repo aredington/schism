@@ -43,10 +43,22 @@
                 (= (apply schism/convergent-map entries)
                    (apply hash-map entries))))
 
+(defspec nested-map-is-equivalent-to-hash-map
+  50
+  (prop/for-all [entries (gen/fmap (comp (partial mapcat identity) seq) (gen/map collection-any collection-any))]
+                (= (apply schism/nested-map entries)
+                   (apply hash-map entries))))
+
 (defspec convergent-vector-is-equivalent-to-vector
   50
   (prop/for-all [v (gen/vector collection-any)]
                 (= (apply schism/convergent-vector v)
+                   (apply vector v))))
+
+(defspec nested-vector-is-equivalent-to-vector
+  50
+  (prop/for-all [v (gen/vector collection-any)]
+                (= (apply schism/nested-vector v)
                    (apply vector v))))
 
 (defspec convergent-list-is-equivalent-to-list
@@ -69,11 +81,26 @@
                 (= (conj (apply schism/convergent-map entries) e)
                    (conj (apply hash-map entries) e))))
 
+(defspec conj-equivalence-for-nested-maps
+  30
+  (prop/for-all [entries (gen/fmap (comp (partial mapcat identity) seq) (gen/map collection-any collection-any))
+                 e (gen/tuple collection-any collection-any)]
+                (= (conj (apply schism/nested-map entries) e)
+                   (conj (apply hash-map entries) e))))
+
+
 (defspec conj-equivalence-for-vectors
   30
   (prop/for-all [v (gen/vector collection-any)
                  e collection-any]
                 (= (conj (apply schism/convergent-vector v) e)
+                   (conj (apply vector v) e))))
+
+(defspec conj-equivalence-for-nested-vectors
+  30
+  (prop/for-all [v (gen/vector collection-any)
+                 e collection-any]
+                (= (conj (apply schism/nested-vector v) e)
                    (conj (apply vector v) e))))
 
 (defspec conj-equivalence-for-lists
@@ -97,6 +124,14 @@
                 (= (assoc (apply schism/convergent-map entries) k v)
                    (assoc (apply hash-map entries) k v))))
 
+(defspec assoc-equivalence-for-nested-maps
+  30
+  (prop/for-all [entries (gen/fmap (comp (partial mapcat identity) seq) (gen/map collection-any collection-any))
+                 k collection-any
+                 v collection-any]
+                (= (assoc (apply schism/nested-map entries) k v)
+                   (assoc (apply hash-map entries) k v))))
+
 (defspec assoc-equivalence-for-vectors
   30
   (prop/for-all [v (gen/such-that #(< 0 (count %))
@@ -106,11 +141,27 @@
                  (= (assoc (apply schism/convergent-vector v) index e)
                     (assoc (apply vector v) index e)))))
 
+(defspec assoc-equivalence-for-nested-vectors
+  30
+  (prop/for-all [v (gen/such-that #(< 0 (count %))
+                                  (gen/vector collection-any))
+                 e collection-any]
+                (gen/let [index (gen/choose 0 (dec (count v)))]
+                 (= (assoc (apply schism/nested-vector v) index e)
+                    (assoc (apply vector v) index e)))))
+
 (defspec pop-equivalence-for-vectors
   30
   (prop/for-all [v (gen/such-that #(< 0 (count %))
                                   (gen/vector collection-any))]
                 (= (pop (apply schism/convergent-vector v))
+                   (pop (apply vector v)))))
+
+(defspec pop-equivalence-for-nested-vectors
+  30
+  (prop/for-all [v (gen/such-that #(< 0 (count %))
+                                  (gen/vector collection-any))]
+                (= (pop (apply schism/nested-vector v))
                    (pop (apply vector v)))))
 
 (defspec dissoc-present-key-for-maps
@@ -121,6 +172,14 @@
                   (= (dissoc (apply schism/convergent-map entries) key)
                      (dissoc (apply hash-map entries) key)))))
 
+(defspec dissoc-present-key-for-nested-maps
+  30
+  (prop/for-all [entries (gen/fmap (comp (partial mapcat identity) seq)
+                                   (gen/map collection-any collection-any {:min-elements 1}))]
+                (gen/let [key (gen/elements (keys (apply hash-map entries)))]
+                  (= (dissoc (apply schism/nested-map entries) key)
+                     (dissoc (apply hash-map entries) key)))))
+
 (defspec dissoc-random-value-for-maps
   30
   (prop/for-all [entries (gen/fmap (comp (partial mapcat identity) seq)
@@ -128,6 +187,15 @@
                  key gen/any]
                 (= (dissoc (apply schism/convergent-map entries) key)
                    (dissoc (apply hash-map entries) key))))
+
+(defspec dissoc-random-value-for-nested-maps
+  30
+  (prop/for-all [entries (gen/fmap (comp (partial mapcat identity) seq)
+                                   (gen/map collection-any collection-any {:min-elements 1}))
+                 key gen/any]
+                (= (dissoc (apply schism/nested-map entries) key)
+                   (dissoc (apply hash-map entries) key))))
+
 
 (defspec disj-included-element-for-sets
   5
@@ -142,11 +210,6 @@
                  e collection-any]
                 (= (disj (apply schism/convergent-set s) e)
                    (disj (apply hash-set s) e))))
-
-(defn clock-ahead [n f]
-  #?(:clj (do (Thread/sleep n)
-              (f))
-     :cljs (js/setTimeout n f)))
 
 (defspec converge-after-ops-equivalent-for-sets
   50

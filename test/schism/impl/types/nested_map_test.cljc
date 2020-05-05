@@ -138,3 +138,45 @@
                            :b [2]}))
       (is (= result {:a [1 2 3]
                      :b [2]})))))
+
+(deftest interesting-map-inits
+  (testing "{-1 [0]}"
+    (node/initialize-node! :interesting-map-inits)
+    (let [v (nmap/new-map -1 [0])]
+      (is (= {-1 [0]} (.-data v)))
+      (is (= :interesting-map-inits (get-in (.-birth-dots v) [-1 0 :a])))
+      (is (= -1 (get-in (.-birth-dots v) [-1 0 :i])))
+      (is (instance? #?(:clj java.util.Date
+                        :cljs js/Date) (get-in (.-birth-dots v) [-1 0 :t])))))
+  (testing "{0 [[0] 0]}"
+    (node/initialize-node! :interesting-map-inits)
+    (let [v (nmap/new-map 0 [[0] 0])]
+      (is (= {0 [[0] 0]} (.-data v)))
+      (is (= :interesting-map-inits (get-in (.-birth-dots v) [0 0 0 :a])))
+      (is (= -1 (get-in (.-birth-dots v) [0 0 0 :i])))
+      (is (instance? #?(:clj java.util.Date
+                        :cljs js/Date) (get-in (.-birth-dots v) [0 0 0 :t])))))
+  (testing "{0 [0 0] -1 [0 0 0 0 0 0] -2 0}"
+    (node/initialize-node! :interesting-map-inits)
+    (let [v (nmap/new-map 0 [0 0] -1 [0 0 0 0 0 0] -2 0)]
+      (is (= {0 [0 0] -1 [0 0 0 0 0 0] -2 0} (.-data v)))
+      (is (= :interesting-map-inits (get-in (.-birth-dots v) [0 0 :a])))
+      (is (= -1 (get-in (.-birth-dots v) [0 0 :i])))
+      (is (instance? #?(:clj java.util.Date
+                        :cljs js/Date) (get-in (.-birth-dots v) [0 0 :t])))))
+  (testing "{0 [0 0] -1 [0 0 0 0 0 0] -2 0}"
+    (node/initialize-node! :interesting-map-inits)
+    (let [v (nmap/new-map 0 [0 0] -1 [0 0 0 0 0 0] -2 0)]
+      (is (= {0 [0 0] -1 [0 0 0 0 0 0] -2 0} (.-data v)))
+      (is (= :interesting-map-inits (get-in (.-birth-dots v) [0 0 :a])))
+      (is (= -1 (get-in (.-birth-dots v) [0 0 :i])))
+      (is (instance? #?(:clj java.util.Date
+                        :cljs js/Date) (get-in (.-birth-dots v) [0 0 :t])))))
+  (testing "{{} [0 0 0 0 0 0 0 0] #{} 0}"
+    (node/initialize-node! :interesting-map-inits)
+    (let [v (nmap/new-map {} [0 0 0 0 0 0 0 0] #{} 0)]
+      (is (= {{} [0 0 0 0 0 0 0 0] #{} 0} (.-data v)))
+      (is (= :interesting-map-inits (get-in (.-birth-dots v) [{} 0 :a])))
+      (is (= -1 (get-in (.-birth-dots v) [{} 0 :i])))
+      (is (instance? #?(:clj java.util.Date
+                        :cljs js/Date) (get-in (.-birth-dots v) [{} 0 :t]))))))

@@ -3,6 +3,8 @@
             [schism.impl.types.map :as smap]
             [schism.impl.types.list :as slist]
             [schism.impl.types.vector :as svector]
+            [schism.impl.types.nested-map :as nmap]
+            [schism.impl.types.nested-vector :as nvector]
             [schism.impl.protocols :as sp]
             [schism.node :as sn]))
 
@@ -34,6 +36,26 @@
   invocation."
   [& args]
   (apply svector/new-vector args))
+
+(defn nested-map
+  "Create a new convergent, nesting map containing args. Each
+  non-collection value at any location in the map will be treated as a
+  single atomic value, allowing for discrete modification of each
+  terminal in the tree. Those collections returned by `nested-map`
+  cannot perform as well as those returned by `convergent-map` and
+  have higher computational and storage costs."
+  [& args]
+  (apply nmap/new-map args))
+
+(defn nested-vector
+  "Create a new convergent, nesting vector containing args. Each
+  non-collection value at any location in the vector will be treated
+  as a single atomic value, allowing for discrete modification of each
+  terminal in the tree. Those collections returned by `nested-vector`
+  cannot perform as well as those returned by `convergent-vector` and
+  have higher computational and storage costs."
+  [& args]
+  (apply nvector/new-vector args))
 
 (defn converge
   "Return a converged copy of `c1` containing the modifications of
