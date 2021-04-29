@@ -29,7 +29,21 @@
   #?(:cljs (gen/such-that #(not (js/Number.isNaN %)) gen/any)
      :clj gen/any))
 
-
+(deftest handles-non-local-copy-as-first-param
+         (let [m1 (schism/with-node "LOCAL" (schism/convergent-map :foo "bar", :a "b"))
+               _ (Thread/sleep 1)
+               m2 (schism/with-node "NOT LOCAL" (schism/convergent-map :y 2, :z 3, :x 1))]
+              (testing "FIXME, I fail."
+                       (is
+                         (thrown-with-msg? IllegalArgumentException
+                                           #"The most recent update in c1's vector clock is not from the local node. schism.core/converge expects the c1 param to be the local node and the c2 param to be the remote node. Please check whether you have reversed that order."
+                                           (schism/with-node "LOCAL" (schism/converge m2 m1))))
+                       ;; We haven't broken existing code in the case where the order is correct (c1 is the local node)
+                       (is (= {:y 2, :z 3, :x 1}
+                              (->>
+                                (schism/with-node "LOCAL" (schism/converge m1 m2))
+                                seq
+                                (into {})))))))
 
 (defspec convergent-set-is-equivalent-to-hash-set
   50
