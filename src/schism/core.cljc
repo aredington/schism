@@ -57,6 +57,15 @@
   [& args]
   (apply nvector/new-vector args))
 
+(defn- is-local-node?
+      [n]
+      "Checks the most recent update in this entity's vector clock. Returns true if that most recent update is not from most-recent schism.node/*current-node*"
+      (let [most-recent (->> (into [] (sp/get-clock n))
+                             (sort-by second)
+                             last
+                             first)]
+           (= most-recent schism.node/*current-node*)))
+
 (defn converge
   "Return a converged copy of `c1` containing the modifications of
   `c2`. Convergence is defined on a per-type basis. If `c1` has
@@ -71,7 +80,9 @@
   - The current value of `schism.node/*current-node*` is shared with
   another node making modifications to the same logical collection."
   [c1 c2]
-  (sp/synchronize c1 c2))
+      (if (is-local-node? c1)
+        (sp/synchronize c1 c2)
+        (throw (IllegalArgumentException. "The most recent update in c1's vector clock is not from the local node. schism.core/converge expects the c1 param to be the local node and the c2 param to be the remote node. Please check whether you have reversed that order."))))
 
 (def initialize-node!
   "Initialize the current node to an edn serializable value if
